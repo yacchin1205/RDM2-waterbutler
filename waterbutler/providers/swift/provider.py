@@ -30,20 +30,18 @@ class SwiftProvider(provider.BaseProvider):
     def __init__(self, auth, credentials, settings):
         """
         :param dict auth: Not used
-        :param dict credentials: Dict containing `access_key` and `secret_key`
-        :param dict settings: Dict containing `bucket`
+        :param dict credentials: Dict containing `username`, `password` and `tenant_name`
+        :param dict settings: Dict containing `container`
         """
         super().__init__(auth, credentials, settings)
 
         self.connection = Connection(auth_version='2',
                                      authurl='http://inter-auth.ecloud.nii.ac.jp:5000/v2.0/',
-                                     user=credentials['access_key'],
-                                     key=credentials['secret_key'],
-                                     tenant_name='yamaji')
+                                     user=credentials['username'],
+                                     key=credentials['password'],
+                                     tenant_name=credentials['tenant_name'])
 
-        self.container = settings['bucket']
-        self.encrypt_uploads = self.settings.get('encrypt_uploads', False)
-        self.region = None
+        self.container = settings['container']
 
     async def validate_v1_path(self, path, **kwargs):
         if path == '/':
