@@ -140,107 +140,13 @@ class SwiftProvider(provider.BaseProvider):
                 )
 
         if path.is_file:
-            resp = await self.make_request(
-                'DELETE',
-                self.bucket.new_key(path.path).generate_url(settings.TEMP_URL_SECS, 'DELETE'),
-                expects=(200, 204, ),
-                throws=exceptions.DeleteError,
-            )
-            await resp.release()
+            assert not path.path.startswith('/')
+            self.connection.delete_object(self.container, path.path)
         else:
             await self._delete_folder(path, **kwargs)
 
     async def _delete_folder(self, path, **kwargs):
-        """Query for recursive contents of folder and delete in batches of 1000
-
-        Called from: func: delete if not path.is_file
-
-        Calls: func: self._check_region
-               func: self.make_request
-               func: self.bucket.generate_url
-
-        :param *ProviderPath path: Path to be deleted
-
-        On S3, folders are not first-class objects, but are instead inferred
-        from the names of their children.  A regular DELETE request issued
-        against a folder will not work unless that folder is completely empty.
-        To fully delete an occupied folder, we must delete all of the comprising
-        objects.  Amazon provides a bulk delete operation to simplify this.
-        """
-
-        more_to_come = True
-        content_keys = []
-        query_params = {'prefix': path.path}
-        marker = None
-
-        while more_to_come:
-            if marker is not None:
-                query_params['marker'] = marker
-
-            resp = await self.make_request(
-                'GET',
-                self.bucket.generate_url(settings.TEMP_URL_SECS, 'GET', query_parameters=query_params),
-                params=query_params,
-                expects=(200, ),
-                throws=exceptions.MetadataError,
-            )
-
-            contents = await resp.read()
-            parsed = xmltodict.parse(contents, strip_whitespace=False)['ListBucketResult']
-            more_to_come = parsed.get('IsTruncated') == 'true'
-            contents = parsed.get('Contents', [])
-
-            if isinstance(contents, dict):
-                contents = [contents]
-
-            content_keys.extend([content['Key'] for content in contents])
-            if len(content_keys) > 0:
-                marker = content_keys[-1]
-
-        # Query against non-existant folder does not return 404
-        if len(content_keys) == 0:
-            raise exceptions.NotFoundError(str(path))
-
-        while len(content_keys) > 0:
-            key_batch = content_keys[:1000]
-            del content_keys[:1000]
-
-            payload = '<?xml version="1.0" encoding="UTF-8"?>'
-            payload += '<Delete>'
-            payload += ''.join(map(
-                lambda x: '<Object><Key>{}</Key></Object>'.format(xml.sax.saxutils.escape(x)),
-                key_batch
-            ))
-            payload += '</Delete>'
-            payload = payload.encode('utf-8')
-            md5 = compute_md5(BytesIO(payload))
-
-            query_params = {'delete': ''}
-            headers = {
-                'Content-Length': str(len(payload)),
-                'Content-MD5': md5[1],
-                'Content-Type': 'text/xml',
-            }
-
-            # We depend on a customized version of boto that can make query parameters part of
-            # the signature.
-            url = functools.partial(
-                self.bucket.generate_url,
-                settings.TEMP_URL_SECS,
-                'POST',
-                query_parameters=query_params,
-                headers=headers,
-            )
-            resp = await self.make_request(
-                'POST',
-                url,
-                params=query_params,
-                data=payload,
-                headers=headers,
-                expects=(200, 204, ),
-                throws=exceptions.DeleteError,
-            )
-            await resp.release()
+        raise NotImplementedError()
 
     async def revisions(self, path, **kwargs):
         """Get past versions of the requested key
