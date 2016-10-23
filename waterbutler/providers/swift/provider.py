@@ -327,6 +327,9 @@ class SwiftProvider(provider.BaseProvider):
         objects = list(map(lambda o: (o['name'][len(path.path):], o),
                            filter(lambda o: o['name'].startswith(path.path),
                                   objects)))
+        if len(objects) == 0:
+            raise exceptions.MetadataError('Not found', code=404)
+
         contents = list(filter(lambda o: '/' not in o[0], objects))
         prefixes = sorted(set(map(lambda o: o[0][:o[0].index('/') + 1],
                                   filter(lambda o: '/' in o[0], objects))))
