@@ -7,7 +7,7 @@ class SwiftMetadata(metadata.BaseMetadata):
 
     @property
     def provider(self):
-        return 'niiswift'
+        return 'swift'
 
     @property
     def name(self):

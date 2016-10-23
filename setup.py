@@ -48,7 +48,7 @@ setup(
             'osfstorage = waterbutler.providers.osfstorage:OSFStorageProvider',
             'owncloud = waterbutler.providers.owncloud:OwnCloudProvider',
             's3 = waterbutler.providers.s3:S3Provider',
-            'niiswift = waterbutler.providers.niiswift:SwiftProvider',
+            'swift = waterbutler.providers.swift:SwiftProvider',
             'dataverse = waterbutler.providers.dataverse:DataverseProvider',
             'box = waterbutler.providers.box:BoxProvider',
             'googledrive = waterbutler.providers.googledrive:GoogleDriveProvider',

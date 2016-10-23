@@ -19,12 +19,12 @@ from waterbutler.core import provider
 from waterbutler.core import exceptions
 from waterbutler.core.path import WaterButlerPath
 
-from waterbutler.providers.niiswift import settings
-from waterbutler.providers.niiswift.metadata import SwiftRevision
-from waterbutler.providers.niiswift.metadata import SwiftFileMetadata
-from waterbutler.providers.niiswift.metadata import SwiftFolderMetadata
-from waterbutler.providers.niiswift.metadata import SwiftFolderKeyMetadata
-from waterbutler.providers.niiswift.metadata import SwiftFileMetadataHeaders
+from waterbutler.providers.swift import settings
+from waterbutler.providers.swift.metadata import SwiftRevision
+from waterbutler.providers.swift.metadata import SwiftFileMetadata
+from waterbutler.providers.swift.metadata import SwiftFolderMetadata
+from waterbutler.providers.swift.metadata import SwiftFolderKeyMetadata
+from waterbutler.providers.swift.metadata import SwiftFileMetadataHeaders
 
 
 class S3Provider(provider.BaseProvider):
@@ -42,7 +42,7 @@ class S3Provider(provider.BaseProvider):
 
     * A GET prefix query against a non-existent path returns 200
     """
-    NAME = 'niiswift'
+    NAME = 'swift'
 
     def __init__(self, auth, credentials, settings):
         """
