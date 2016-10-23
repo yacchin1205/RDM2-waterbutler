@@ -8,13 +8,6 @@ import xmltodict
 
 import xml.sax.saxutils
 
-from boto import config as boto_config
-from boto.compat import BytesIO
-from boto.utils import compute_md5
-from boto.auth import get_auth_handler
-from boto.s3.connection import S3Connection
-from boto.s3.connection import OrdinaryCallingFormat
-
 from swiftclient import Connection
 from swiftclient import exceptions as swift_exceptions
 
@@ -26,7 +19,6 @@ from waterbutler.core.path import WaterButlerPath
 from waterbutler.providers.swift import settings
 from waterbutler.providers.swift.metadata import SwiftFileMetadata
 from waterbutler.providers.swift.metadata import SwiftFolderMetadata
-from waterbutler.providers.swift.metadata import SwiftFolderKeyMetadata
 from waterbutler.providers.swift.metadata import SwiftFileMetadataHeaders
 
 
@@ -80,37 +72,16 @@ class SwiftProvider(provider.BaseProvider):
         return True
 
     def can_intra_copy(self, dest_provider, path=None):
-        return type(self) == type(dest_provider) and not getattr(path, 'is_dir', False)
+        # Not supported
+        return False
 
     def can_intra_move(self, dest_provider, path=None):
-        return type(self) == type(dest_provider) and not getattr(path, 'is_dir', False)
+        # Not supported
+        return False
 
     async def intra_copy(self, dest_provider, source_path, dest_path):
-        """Copy key from one S3 bucket to another. The credentials specified in
-        `dest_provider` must have read access to `source.bucket`.
-        """
-        exists = await dest_provider.exists(dest_path)
-
-        dest_key = dest_provider.bucket.new_key(dest_path.path)
-
-        # ensure no left slash when joining paths
-        source_path = '/' + os.path.join(self.settings['bucket'], source_path.path)
-        headers = {'x-amz-copy-source': parse.quote(source_path)}
-        url = functools.partial(
-            dest_key.generate_url,
-            settings.TEMP_URL_SECS,
-            'PUT',
-            headers=headers,
-        )
-        resp = await self.make_request(
-            'PUT', url,
-            skip_auto_headers={'CONTENT-TYPE'},
-            headers=headers,
-            expects=(200, ),
-            throws=exceptions.IntraCopyError,
-        )
-        await resp.release()
-        return (await dest_provider.metadata(dest_path)), not exists
+        # Not supported
+        raise NotImplementedError()
 
     async def download(self, path, accept_url=False, version=None, range=None, **kwargs):
         """

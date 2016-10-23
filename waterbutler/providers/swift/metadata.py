@@ -78,17 +78,6 @@ class SwiftFileMetadata(SwiftMetadata, metadata.BaseFileMetadata):
         }
 
 
-class SwiftFolderKeyMetadata(SwiftMetadata, metadata.BaseFolderMetadata):
-
-    @property
-    def name(self):
-        return self.raw['Key'].split('/')[-2]
-
-    @property
-    def path(self):
-        return '/' + self.raw['Key']
-
-
 class SwiftFolderMetadata(SwiftMetadata, metadata.BaseFolderMetadata):
 
     @property
