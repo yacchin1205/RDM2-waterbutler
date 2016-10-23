@@ -303,14 +303,8 @@ class SwiftProvider(provider.BaseProvider):
             if (await self.exists(path)):
                 raise exceptions.FolderNamingConflict(str(path))
 
-        async with self.request(
-            'PUT',
-            functools.partial(self.bucket.new_key(path.path).generate_url, settings.TEMP_URL_SECS, 'PUT'),
-            skip_auto_headers={'CONTENT-TYPE'},
-            expects=(200, 201),
-            throws=exceptions.CreateFolderError
-        ):
-            return SwiftFolderMetadata({'Prefix': path.path})
+        self.connection.put_object(self.container, path.path + '.swiftkeep', '')
+        return SwiftFolderMetadata({'prefix': path.path})
 
     async def _metadata_file(self, path, revision=None):
         if revision == 'Latest':
