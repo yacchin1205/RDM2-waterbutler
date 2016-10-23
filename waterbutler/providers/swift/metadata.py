@@ -28,25 +28,24 @@ class SwiftFileMetadataHeaders(SwiftMetadata, metadata.BaseFileMetadata):
 
     @property
     def size(self):
-        return self.raw['CONTENT-LENGTH']
+        return self.raw['content-length']
 
     @property
     def content_type(self):
-        return self.raw['CONTENT-TYPE']
+        return self.raw['content-type']
 
     @property
     def modified(self):
-        return self.raw['LAST-MODIFIED']
+        return self.raw['last-modified']
 
     @property
     def etag(self):
-        return self.raw['ETAG'].replace('"', '')
+        return self.raw['etag']
 
     @property
     def extra(self):
         return {
-            'md5': self.raw['ETAG'].replace('"', ''),
-            'encryption': self.raw.get('X-AMZ-SERVER-SIDE-ENCRYPTION', '')
+            'md5': self.raw['etag']
         }
 
 
@@ -54,28 +53,28 @@ class SwiftFileMetadata(SwiftMetadata, metadata.BaseFileMetadata):
 
     @property
     def path(self):
-        return '/' + self.raw['Key']
+        return '/' + self.raw['name']
 
     @property
     def size(self):
-        return int(self.raw['Size'])
+        return int(self.raw['bytes'])
 
     @property
     def modified(self):
-        return self.raw['LastModified']
+        return self.raw['last_modified']
 
     @property
     def content_type(self):
-        return None  # TODO
+        return self.raw['content_type']
 
     @property
     def etag(self):
-        return self.raw['ETag'].replace('"', '')
+        return self.raw['hash']
 
     @property
     def extra(self):
         return {
-            'md5': self.raw['ETag'].replace('"', '')
+            'md5': self.raw['hash']
         }
 
 
@@ -94,32 +93,8 @@ class SwiftFolderMetadata(SwiftMetadata, metadata.BaseFolderMetadata):
 
     @property
     def name(self):
-        return self.raw['Prefix'].split('/')[-2]
+        return self.raw['prefix'].split('/')[-2]
 
     @property
     def path(self):
-        return '/' + self.raw['Prefix']
-
-
-# TODO dates!
-class SwiftRevision(metadata.BaseFileRevisionMetadata):
-
-    @property
-    def version_identifier(self):
-        return 'version'
-
-    @property
-    def version(self):
-        if self.raw['IsLatest'] == 'true':
-            return 'Latest'
-        return self.raw['VersionId']
-
-    @property
-    def modified(self):
-        return self.raw['LastModified']
-
-    @property
-    def extra(self):
-        return {
-            'md5': self.raw['ETag'].replace('"', '')
-        }
+        return '/' + self.raw['prefix']
