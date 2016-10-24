@@ -81,6 +81,20 @@ class WEKODatasetMetadata(BaseWEKOMetadata, metadata.BaseFolderMetadata):
         return self.build_path(self.doi)
 
 
+class WEKOIndexMetadata(BaseWEKOMetadata, metadata.BaseFolderMetadata):
+
+    def __init__(self, raw):
+        super().__init__(raw)
+
+    @property
+    def name(self):
+        return self.raw['title']
+
+    @property
+    def path(self):
+        return '/' + self.raw['title']
+
+
 class WEKORevision(metadata.BaseFileRevisionMetadata):
 
     @property

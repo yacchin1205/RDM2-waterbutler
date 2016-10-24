@@ -1,5 +1,9 @@
 import http
 import tempfile
+import requests
+from io import BytesIO
+from lxml import etree
+import logging
 
 from waterbutler.core import streams
 from waterbutler.core import provider
@@ -10,12 +14,16 @@ from waterbutler.core.utils import AsyncIterator
 from waterbutler.providers.weko import settings
 from waterbutler.providers.weko.metadata import WEKORevision
 from waterbutler.providers.weko.metadata import WEKODatasetMetadata
+from waterbutler.providers.weko.metadata import WEKOIndexMetadata
+from waterbutler.providers.weko import client
 
+logger = logging.getLogger('waterbutler.providers.weko')
 
 class WEKOProvider(provider.BaseProvider):
     """Provider for WEKO"""
 
     NAME = 'weko'
+    connection = None
 
     def __init__(self, auth, credentials, settings):
         """
@@ -28,12 +36,13 @@ class WEKOProvider(provider.BaseProvider):
             - Other
         """
         super().__init__(auth, credentials, settings)
-        self.BASE_URL = 'https://{0}'.format(self.settings['host'])
+        self.BASE_URL = 'http://104.198.102.120/weko-oauth/htdocs/weko/sword/'
 
         self.token = self.credentials['token']
         self.doi = self.settings['doi']
         self._id = self.settings['id']
         self.name = self.settings['name']
+        self.connection = client.connect_or_error(self.BASE_URL, self.token)
 
         self._metadata_cache = {}
 
@@ -85,13 +94,6 @@ class WEKOProvider(provider.BaseProvider):
         wbpath.revision = revision or base.revision
         return wbpath
 
-    async def _maybe_fetch_metadata(self, version=None, refresh=False):
-        if refresh or self._metadata_cache.get(version) is None:
-            for v in ((version, ) or ('latest', 'latest-published')):
-                self._metadata_cache[v] = await self._get_data(v)
-        if version:
-            return self._metadata_cache[version]
-        return sum(self._metadata_cache.values(), [])
 
     async def download(self, path, revision=None, range=None, **kwargs):
         """Returns a ResponseWrapper (Stream) for the specified path
@@ -194,9 +196,11 @@ class WEKOProvider(provider.BaseProvider):
             - None for all data
         """
         version = version or path.revision
+        logger.info('Path: {path}, href={href}'.format(path=path.path, href=self.doi))
 
         if path.is_root:
-            return (await self._maybe_fetch_metadata(version=version))
+            indices = client.get_root_indices(self.connection, self.doi)
+            return [WEKOIndexMetadata(index) for index in indices]
 
         try:
             return next(
