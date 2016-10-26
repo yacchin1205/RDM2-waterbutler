@@ -46,9 +46,13 @@ class Item(object):
     parentIdentifier = None
 
     def __init__(self, entry):
-        self.raw = {'id': entry.find('{%s}id' % ATOM_NAMESPACE).text,
+        self.raw = {'id': entry.find('{%s}id' % ATOM_NAMESPACE).text.strip(),
                     'title': entry.find('{%s}title' % ATOM_NAMESPACE).text,
                     'updated': entry.find('{%s}updated' % ATOM_NAMESPACE).text}
+
+    @property
+    def about(self):
+        return self.raw['id']
 
     @property
     def file_id(self):

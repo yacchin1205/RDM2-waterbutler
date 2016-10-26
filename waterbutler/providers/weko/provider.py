@@ -165,8 +165,10 @@ class WEKOProvider(provider.BaseProvider):
             index = [index
                      for index in indices if str(index.identifier) == parent][0]
 
+            index_urls = set([index.about for index in indices if str(index.parentIdentifier) == parent])
             ritems = [WEKOItemMetadata(item, index, indices)
-                      for item in client.get_items(self.connection, index)]
+                      for item in client.get_items(self.connection, index)
+                      if item.about not in index_urls]
 
             rindices = [WEKOIndexMetadata(index, indices)
                         for index in indices if str(index.parentIdentifier) == parent]
