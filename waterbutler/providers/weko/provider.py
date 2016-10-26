@@ -13,7 +13,7 @@ from waterbutler.core.utils import AsyncIterator
 
 from waterbutler.providers.weko import settings
 from waterbutler.providers.weko.metadata import WEKORevision
-from waterbutler.providers.weko.metadata import WEKODatasetMetadata
+from waterbutler.providers.weko.metadata import WEKOItemMetadata
 from waterbutler.providers.weko.metadata import WEKOIndexMetadata
 from waterbutler.providers.weko import client
 
@@ -189,8 +189,16 @@ class WEKOProvider(provider.BaseProvider):
                     for index in indices if index.nested == 0]
         if path.is_dir:
             parent = path.path.split('/')[-2]
-            return [WEKOIndexMetadata(index, indices)
-                    for index in indices if str(index.parentIdentifier) == parent]
+            index = [index
+                     for index in indices if str(index.identifier) == parent][0]
+
+            ritems = [WEKOItemMetadata(item, index)
+                      for item in client.get_items(self.connection, index)]
+
+            rindices = [WEKOIndexMetadata(index, indices)
+                        for index in indices if str(index.parentIdentifier) == parent]
+            return rindices + ritems
+ 
         raise exceptions.MetadataError('unsupported', code=404)
 
     async def revisions(self, path, **kwargs):
@@ -206,49 +214,3 @@ class WEKOProvider(provider.BaseProvider):
             WEKORevision(item.extra['datasetVersion'])
             for item in metadata if item.extra['fileId'] == path.identifier
         ]
-
-    async def _get_data(self, version=None):
-        """Get list of file metadata for a given dataset version
-
-        :param str version:
-
-            - 'latest' for draft files
-            - 'latest-published' for published files
-            - None for all data
-        """
-
-        if not version:
-            return (await self._get_all_data())
-
-        url = self.build_url(
-            settings.JSON_BASE_URL.format(self._id, version),
-            key=self.token,
-        )
-        resp = await self.make_request(
-            'GET',
-            url,
-            expects=(200, ),
-            throws=exceptions.MetadataError
-        )
-
-        data = await resp.json()
-        data = data['data']
-
-        dataset_metadata = WEKODatasetMetadata(
-            data, self.name, self.doi, version,
-        )
-
-        return [item for item in dataset_metadata.contents]
-
-    async def _get_all_data(self):
-        """Get list of file metadata for all dataset versions"""
-        try:
-            published_data = await self._get_data('latest-published')
-        except exceptions.MetadataError as e:
-            if e.code != 404:
-                raise
-            published_data = []
-        draft_data = await self._get_data('latest')
-
-        # Prefer published to guarantee users get published version by default
-        return published_data + draft_data

@@ -1,8 +1,8 @@
 import logging
 import requests
 from io import BytesIO
-
 from lxml import etree
+import base64
 
 logger = logging.getLogger('addons.weko.client')
 
@@ -40,6 +40,33 @@ class Index(object):
     @property
     def about(self):
         return self.raw['about']
+
+class Item(object):
+    raw = None
+    parentIdentifier = None
+
+    def __init__(self, entry):
+        self.raw = {'id': entry.find('{%s}id' % ATOM_NAMESPACE).text,
+                    'title': entry.find('{%s}title' % ATOM_NAMESPACE).text,
+                    'author': entry.find('{%s}author' % ATOM_NAMESPACE).find('{%s}name' % ATOM_NAMESPACE).text,
+                    'updated': entry.find('{%s}updated' % ATOM_NAMESPACE).text}
+
+    @property
+    def file_id(self):
+        return base64.b64encode(self.raw['id'].encode(encoding='utf-8')).decode(encoding='utf-8')
+
+    @property
+    def title(self):
+        return self.raw['title']
+
+    @property
+    def author(self):
+        return self.raw['author']
+
+    @property
+    def updated(self):
+        return self.raw['updated']
+
 
 class Connection(object):
     host = None
@@ -128,6 +155,14 @@ def get_all_indices(connection, dataset):
             ids.append(index.identifier)
     return indices
 
+
+def get_items(connection, index):
+    root = connection.get_url(index.about)
+    items = []
+    for entry in root.findall('.//atom.entry'):
+        logger.info('Name: {}'.format(entry.find('{%s}title' % ATOM_NAMESPACE).text))
+        items.append(Item(entry))
+    return items
 
 def get_datasets(weko):
     if weko is None:

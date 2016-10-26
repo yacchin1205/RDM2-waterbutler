@@ -8,39 +8,38 @@ class BaseWEKOMetadata(metadata.BaseMetadata):
         return 'weko'
 
 
-class WEKOFileMetadata(BaseWEKOMetadata, metadata.BaseFileMetadata):
+class WEKOItemMetadata(BaseWEKOMetadata, metadata.BaseFileMetadata):
+    index = None
 
-    def __init__(self, raw, dataset_version):
+    def __init__(self, raw, index):
         super().__init__(raw)
-        self.dataset_version = dataset_version
-
-        # Note: If versioning by number is added, this will have to check
-        # all published versions, not just 'latest-published'.
-        self.has_published_version = dataset_version == 'latest-published'
+        self.index = index
 
     @property
     def file_id(self):
-        return str(self.raw['id'])
+        return str(self.raw.file_id)
 
     @property
     def name(self):
-        return self.raw.get('name', None) or self.raw.get('filename', None)
+        return self.raw.title
+
+    @property
+    def content_type(self):
+        return None
 
     @property
     def path(self):
-        return self.build_path(self.file_id)
-
-    @property
-    def materialized_path(self):
-        return '/' + self.name
+        target = self.index
+        path = target.identifier + '/'
+        while target.parentIdentifier is not None:
+            target = [i for i in self.all_indices
+                        if i.identifier == target.parentIdentifier][0]
+            path = target.identifier + '/' + path
+        return '/' + path + self.raw.file_id
 
     @property
     def size(self):
         return None
-
-    @property
-    def content_type(self):
-        return self.raw['contentType']
 
     @property
     def modified(self):
@@ -48,37 +47,13 @@ class WEKOFileMetadata(BaseWEKOMetadata, metadata.BaseFileMetadata):
 
     @property
     def etag(self):
-        return '{}::{}'.format(self.dataset_version, self.file_id)
+        return self.raw.file_id
 
     @property
     def extra(self):
         return {
-            'fileId': self.file_id,
-            'datasetVersion': self.dataset_version,
-            'hasPublishedVersion': self.has_published_version,
+            'fileId': self.raw.file_id,
         }
-
-
-class WEKODatasetMetadata(BaseWEKOMetadata, metadata.BaseFolderMetadata):
-
-    def __init__(self, raw, name, doi, version):
-        super().__init__(raw)
-        self._name = name
-        self.doi = doi
-
-        files = self.raw['files']
-        self.contents = []
-        for f in files:
-            datafile = f.get('datafile', None) or f.get('dataFile', None)
-            self.contents.append(WEKOFileMetadata(datafile, version))
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def path(self):
-        return self.build_path(self.doi)
 
 
 class WEKOIndexMetadata(BaseWEKOMetadata, metadata.BaseFolderMetadata):
