@@ -39,7 +39,7 @@ class WEKOProvider(provider.BaseProvider):
         self.BASE_URL = 'http://104.198.102.120/weko-oauth/htdocs/weko/sword/'
 
         self.token = self.credentials['token']
-        self.doi = self.settings['doi']
+        self.href = self.settings['doi']
         self._id = self.settings['id']
         self.name = self.settings['name']
         self.connection = client.connect_or_error(self.BASE_URL, self.token)
@@ -68,14 +68,7 @@ class WEKOProvider(provider.BaseProvider):
 
     async def revalidate_path(self, base, path, folder=False, revision=None):
         path = path.strip('/')
-
-        wbpath = None
-        for item in (await self._maybe_fetch_metadata(version=revision)):
-            if path == item.name:
-                # Dataverse cant have folders
-                wbpath = base.child(item.name, _id=item.extra['fileId'], folder=False)
-        wbpath = wbpath or base.child(path, _id=None, folder=False)
-
+        wbpath = base.child(path, _id=None, folder=False)
         wbpath.revision = revision or base.revision
         return wbpath
 
@@ -116,37 +109,17 @@ class WEKOProvider(provider.BaseProvider):
         :rtype: dict, bool
         """
 
-        stream = streams.ZipStreamReader(AsyncIterator([(path.name, stream)]))
-
         # Write stream to disk (Necessary to find zip file size)
         f = tempfile.TemporaryFile()
+        stream_size = 0
         chunk = await stream.read()
         while chunk:
             f.write(chunk)
+            stream_size += len(chunk)
             chunk = await stream.read()
-        stream = streams.FileStreamReader(f)
+        f.seek(0)
 
-        dv_headers = {
-            "Content-Disposition": "filename=temp.zip",
-            "Content-Type": "application/zip",
-            "Packaging": "http://purl.org/net/sword/package/SimpleZip",
-            "Content-Length": str(stream.size),
-        }
-
-        # Delete old file if it exists
-        if path.identifier:
-            await self.delete(path)
-
-        resp = await self.make_request(
-            'POST',
-            self.build_url(settings.EDIT_MEDIA_BASE_URL, 'study', self.doi),
-            headers=dv_headers,
-            auth=(self.token, ),
-            data=stream,
-            expects=(201, ),
-            throws=exceptions.UploadError
-        )
-        await resp.release()
+        client.post(self.connection, self.href, f, stream_size)
 
         # Find appropriate version of file
         metadata = await self._get_data('latest')
@@ -181,8 +154,8 @@ class WEKOProvider(provider.BaseProvider):
             - None for all data
         """
         version = version or path.revision
-        logger.info('Path: {path}, href={href}'.format(path=path.path, href=self.doi))
-        indices = client.get_all_indices(self.connection, self.doi)
+        logger.info('Path: {path}, href={href}'.format(path=path.path, href=self.href))
+        indices = client.get_all_indices(self.connection, self.href)
 
         if path.is_root:
             return [WEKOIndexMetadata(index, indices)
@@ -192,7 +165,7 @@ class WEKOProvider(provider.BaseProvider):
             index = [index
                      for index in indices if str(index.identifier) == parent][0]
 
-            ritems = [WEKOItemMetadata(item, index)
+            ritems = [WEKOItemMetadata(item, index, indices)
                       for item in client.get_items(self.connection, index)]
 
             rindices = [WEKOIndexMetadata(index, indices)

@@ -48,7 +48,6 @@ class Item(object):
     def __init__(self, entry):
         self.raw = {'id': entry.find('{%s}id' % ATOM_NAMESPACE).text,
                     'title': entry.find('{%s}title' % ATOM_NAMESPACE).text,
-                    'author': entry.find('{%s}author' % ATOM_NAMESPACE).find('{%s}name' % ATOM_NAMESPACE).text,
                     'updated': entry.find('{%s}updated' % ATOM_NAMESPACE).text}
 
     @property
@@ -88,6 +87,16 @@ class Connection(object):
     def get_url(self, url):
         headers = {"Authorization":"Bearer " + self.token}
         resp = requests.get(url, headers=headers)
+        if resp.status_code != 200:
+            resp.raise_for_status()
+        tree = etree.parse(BytesIO(resp.content))
+        logger.info('Connected: {}'.format(etree.tostring(tree)))
+        return tree
+
+    def post_url(self, url, stream, headers={}):
+        headers = headers.copy()
+        headers["Authorization"] = "Bearer " + self.token
+        resp = requests.post(url, headers=headers, data=stream)
         if resp.status_code != 200:
             resp.raise_for_status()
         tree = etree.parse(BytesIO(resp.content))
@@ -163,6 +172,18 @@ def get_items(connection, index):
         logger.info('Name: {}'.format(entry.find('{%s}title' % ATOM_NAMESPACE).text))
         items.append(Item(entry))
     return items
+
+
+def post(connection, target, stream, stream_size):
+    logger.info('Post: {}'.format(target))
+    weko_headers = {
+        "Content-Disposition": "filename=temp.zip",
+        "Content-Type": "application/zip",
+        "Packaging": "http://purl.org/net/sword/package/SimpleZip",
+        "Content-Length": str(stream_size),
+    }
+    return connection.post_url(target, stream, headers=weko_headers)
+
 
 def get_datasets(weko):
     if weko is None:

@@ -10,10 +10,12 @@ class BaseWEKOMetadata(metadata.BaseMetadata):
 
 class WEKOItemMetadata(BaseWEKOMetadata, metadata.BaseFileMetadata):
     index = None
+    all_indices = None
 
-    def __init__(self, raw, index):
+    def __init__(self, raw, index, all_indices):
         super().__init__(raw)
         self.index = index
+        self.all_indices = all_indices
 
     @property
     def file_id(self):
