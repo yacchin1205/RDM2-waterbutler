@@ -82,17 +82,25 @@ class WEKODatasetMetadata(BaseWEKOMetadata, metadata.BaseFolderMetadata):
 
 
 class WEKOIndexMetadata(BaseWEKOMetadata, metadata.BaseFolderMetadata):
+    all_indices = None
 
-    def __init__(self, raw):
+    def __init__(self, raw, all_indices):
         super().__init__(raw)
+        self.all_indices = all_indices
 
     @property
     def name(self):
-        return self.raw['title']
+        return self.raw.title
 
     @property
     def path(self):
-        return '/' + self.raw['title']
+        target = self.raw
+        path = target.identifier + '/'
+        while target.parentIdentifier is not None:
+            target = [i for i in self.all_indices
+                        if i.identifier == target.parentIdentifier][0]
+            path = target.identifier + '/' + path
+        return '/' + path
 
 
 class WEKORevision(metadata.BaseFileRevisionMetadata):

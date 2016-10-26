@@ -54,9 +54,6 @@ class WEKOProvider(provider.BaseProvider):
         return False
 
     async def validate_v1_path(self, path, **kwargs):
-        if path != '/' and path.endswith('/'):
-            raise exceptions.NotFoundError(str(path))
-
         return await self.validate_path(path, **kwargs)
 
     async def validate_path(self, path, revision=None, **kwargs):
@@ -65,19 +62,7 @@ class WEKOProvider(provider.BaseProvider):
         :param str path: The path to a file
         :param list metadata: List of file metadata from _get_data
         """
-        if path == '/':
-            wbpath = WaterButlerPath('/')
-            wbpath.revision = revision
-            return wbpath
-
-        path = path.strip('/')
-
-        wbpath = None
-        for item in (await self._maybe_fetch_metadata(version=revision)):
-            if path == item.extra['fileId']:
-                wbpath = WaterButlerPath('/' + item.name, _ids=(None, item.extra['fileId']))
-        wbpath = wbpath or WaterButlerPath('/' + path)
-
+        wbpath = WaterButlerPath(path)
         wbpath.revision = revision
         return wbpath
 
@@ -197,23 +182,16 @@ class WEKOProvider(provider.BaseProvider):
         """
         version = version or path.revision
         logger.info('Path: {path}, href={href}'.format(path=path.path, href=self.doi))
+        indices = client.get_all_indices(self.connection, self.doi)
 
         if path.is_root:
-            indices = client.get_root_indices(self.connection, self.doi)
-            return [WEKOIndexMetadata(index) for index in indices]
-
-        try:
-            return next(
-                item
-                for item in
-                (await self._maybe_fetch_metadata(version=version))
-                if item.extra['fileId'] == path.identifier
-            )
-        except StopIteration:
-            raise exceptions.MetadataError(
-                "Could not retrieve file '{}'".format(path),
-                code=http.client.NOT_FOUND,
-            )
+            return [WEKOIndexMetadata(index, indices)
+                    for index in indices if index.nested == 0]
+        if path.is_dir:
+            parent = path.path.split('/')[-2]
+            return [WEKOIndexMetadata(index, indices)
+                    for index in indices if str(index.parentIdentifier) == parent]
+        raise exceptions.MetadataError('unsupported', code=404)
 
     async def revisions(self, path, **kwargs):
         """Get past versions of the request file. Orders versions based on
