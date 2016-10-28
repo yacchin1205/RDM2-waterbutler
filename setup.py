@@ -50,6 +50,7 @@ setup(
             's3 = waterbutler.providers.s3:S3Provider',
             'swift = waterbutler.providers.swift:SwiftProvider',
             'dataverse = waterbutler.providers.dataverse:DataverseProvider',
+            'weko = waterbutler.providers.weko:WEKOProvider',
             'box = waterbutler.providers.box:BoxProvider',
             'googledrive = waterbutler.providers.googledrive:GoogleDriveProvider',
         ],
