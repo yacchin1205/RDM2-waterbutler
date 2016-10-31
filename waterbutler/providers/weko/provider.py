@@ -36,12 +36,11 @@ class WEKOProvider(provider.BaseProvider):
             - Other
         """
         super().__init__(auth, credentials, settings)
-        self.BASE_URL = 'http://104.198.102.120/weko-oauth/htdocs/weko/sword/'
+        self.BASE_URL = self.settings['url']
 
         self.token = self.credentials['token']
-        self.href = self.settings['doi']
-        self._id = self.settings['id']
-        self.name = self.settings['name']
+        self.index_id = self.settings['index_id']
+        self.index_title = self.settings['index_title']
         self.connection = client.connect_or_error(self.BASE_URL, self.token)
 
         self._metadata_cache = {}
@@ -119,7 +118,7 @@ class WEKOProvider(provider.BaseProvider):
             chunk = await stream.read()
         f.seek(0)
 
-        client.post(self.connection, self.href, f, stream_size)
+        client.post(self.connection, f, stream_size)
 
         # Find appropriate version of file
         metadata = await self._get_data('latest')
@@ -154,27 +153,26 @@ class WEKOProvider(provider.BaseProvider):
             - None for all data
         """
         version = version or path.revision
-        logger.info('Path: {path}, href={href}'.format(path=path.path, href=self.href))
-        indices = client.get_all_indices(self.connection, self.href)
+        indices = client.get_all_indices(self.connection)
 
         if path.is_root:
-            return [WEKOIndexMetadata(index, indices)
-                    for index in indices if index.nested == 0]
-        if path.is_dir:
+            parent = str(self.index_id)
+        elif path.is_dir:
             parent = path.path.split('/')[-2]
-            index = [index
-                     for index in indices if str(index.identifier) == parent][0]
+        else:
+            raise exceptions.MetadataError('unsupported', code=404)
 
-            index_urls = set([index.about for index in indices if str(index.parentIdentifier) == parent])
-            ritems = [WEKOItemMetadata(item, index, indices)
-                      for item in client.get_items(self.connection, index)
-                      if item.about not in index_urls]
+        index = [index
+                 for index in indices if str(index.identifier) == parent][0]
 
-            rindices = [WEKOIndexMetadata(index, indices)
-                        for index in indices if str(index.parentIdentifier) == parent]
-            return rindices + ritems
- 
-        raise exceptions.MetadataError('unsupported', code=404)
+        index_urls = set([index.about for index in indices if str(index.parentIdentifier) == parent])
+        ritems = [WEKOItemMetadata(item, index, indices)
+                  for item in client.get_items(self.connection, index)
+                  if item.about not in index_urls]
+
+        rindices = [WEKOIndexMetadata(index, indices)
+                    for index in indices if str(index.parentIdentifier) == parent]
+        return rindices + ritems
 
     async def revisions(self, path, **kwargs):
         """Get past versions of the request file. Orders versions based on

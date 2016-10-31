@@ -79,6 +79,13 @@ class Connection(object):
         self.host = host
         self.token = token
 
+    def get_login_user(self, default_user=None):
+        headers = {"Authorization":"Bearer " + self.token}
+        resp = requests.get(self.host + 'servicedocument.php', headers=headers)
+        if resp.status_code != 200:
+            resp.raise_for_status()
+        return resp.headers.get('X-WEKO-Login-User', default_user)
+
     def get(self, path):
         headers = {"Authorization":"Bearer " + self.token}
         resp = requests.get(self.host + path, headers=headers)
@@ -115,11 +122,11 @@ def _connect(host, token):
         return None
 
 
-def connect_from_settings(node_settings):
+def connect_from_settings(weko_settings, node_settings):
     if not (node_settings and node_settings.external_account):
         return None
 
-    host = 'http://104.198.102.120/weko-oauth/htdocs/weko/sword/'
+    host = weko_settings.REPOSITORIES[node_settings.external_account.provider_id.split('@')[-1]]['host']
     token = node_settings.external_account.oauth_key
 
     try:
@@ -138,17 +145,17 @@ def connect_or_error(host, token):
         raise HTTPError(http.UNAUTHORIZED)
 
 
-def connect_from_settings_or_401(node_settings):
+def connect_from_settings_or_401(weko_settings, node_settings):
     if not (node_settings and node_settings.external_account):
         return None
 
-    host = 'http://104.198.102.120/weko-oauth/htdocs/weko/sword/'
+    host = weko_settings.REPOSITORIES[node_settings.external_account.provider_id.split('@')[-1]]['host']
     token = node_settings.external_account.oauth_key
 
     return connect_or_error(host, token)
 
 
-def get_all_indices(connection, dataset):
+def get_all_indices(connection, dataset=None):
     root = connection.get('servicedocument.php')
     indices = []
     for desc in root.findall('.//{%s}Description' % RDF_NAMESPACE):
@@ -169,6 +176,9 @@ def get_all_indices(connection, dataset):
     return indices
 
 
+def get_index_by_id(connection, index_id):
+    return list(filter(lambda i: i.identifier == index_id, get_all_indices(connection)))[0]
+
 def get_items(connection, index):
     root = connection.get_url(index.about)
     items = []
@@ -178,7 +188,11 @@ def get_items(connection, index):
     return items
 
 
-def post(connection, target, stream, stream_size):
+def post(connection, stream, stream_size):
+    root = connection.get('servicedocument.php')
+    target = None
+    for collection in root.findall('.//{%s}collection' % APP_NAMESPACE):
+        target = collection.attrib['href']
     logger.info('Post: {}'.format(target))
     weko_headers = {
         "Content-Disposition": "filename=temp.zip",
