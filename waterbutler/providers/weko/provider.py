@@ -118,14 +118,17 @@ class WEKOProvider(provider.BaseProvider):
             chunk = await stream.read()
         f.seek(0)
 
-        client.post(self.connection, f, stream_size)
+        insert_index_id = self.index_id if '/' not in path.path else path.path.split('/')[-2]
+        new_item_url = client.post(self.connection, insert_index_id, f, stream_size)
 
-        # Find appropriate version of file
-        metadata = await self._get_data('latest')
-        files = metadata if isinstance(metadata, list) else []
-        file_metadata = next(file for file in files if file.name == path.name)
+        indices = client.get_all_indices(self.connection)
+        index = list(filter(lambda i: str(i.identifier) == insert_index_id,
+                            indices))[0]
+        nitems = [WEKOItemMetadata(item, index, indices)
+                  for item in client.get_items(self.connection, index)
+                  if client.itemId(item.about) == client.itemId(new_item_url)]
 
-        return file_metadata, path.identifier is None
+        return nitems[0], True
 
     async def delete(self, path, **kwargs):
         """Deletes the key at the specified path
