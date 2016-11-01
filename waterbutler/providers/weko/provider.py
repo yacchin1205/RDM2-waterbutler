@@ -4,6 +4,7 @@ import requests
 from io import BytesIO
 from lxml import etree
 import logging
+from urllib.parse import urlparse, urlunparse, parse_qs
 
 from waterbutler.core import streams
 from waterbutler.core import provider
@@ -135,17 +136,24 @@ class WEKOProvider(provider.BaseProvider):
 
         :param str path: The path of the key to delete
         """
-        # Can only delete files in draft
-        path = await self.validate_path('/' + path.identifier, version='latest', throw=True)
+        logger.info('Delete: {}'.format(path.path))
+        assert path.path.split('/')[-1].startswith('item')
+        parent = path.path.split('/')[-2]
+        item_id = path.path.split('/')[-1][4:]
 
-        resp = await self.make_request(
-            'DELETE',
-            self.build_url(settings.EDIT_MEDIA_BASE_URL, 'file', path.identifier),
-            auth=(self.token, ),
-            expects=(204, ),
-            throws=exceptions.DeleteError,
-        )
-        await resp.release()
+        indices = client.get_all_indices(self.connection)
+        index = [index
+                 for index in indices if str(index.identifier) == parent][0]
+        delitem = [item
+                   for item in client.get_items(self.connection, index)
+                   if client.itemId(item.about) == item_id][0]
+
+        scheme, netloc, path, params, oai_query, fragment = urlparse(delitem.about)
+        sword_query = 'action=repository_uri&item_id={}'.format(item_id)
+        sword_url = urlunparse((scheme, netloc, path, params, sword_query, fragment))
+        logger.info('Delete target: {} - {}'.format(delitem.title, sword_url))
+
+        client.delete(self.connection, sword_url)
 
     async def metadata(self, path, version=None, **kwargs):
         """

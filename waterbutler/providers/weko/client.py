@@ -58,7 +58,7 @@ class Item(object):
 
     @property
     def file_id(self):
-        return base64.b64encode(self.raw['id'].encode(encoding='utf-8')).decode(encoding='utf-8')
+        return 'item{}'.format(itemId(self.raw['id']))
 
     @property
     def title(self):
@@ -104,6 +104,12 @@ class Connection(object):
         tree = etree.parse(BytesIO(resp.content))
         return tree
 
+    def delete_url(self, url):
+        headers = {"Authorization":"Bearer " + self.token}
+        resp = requests.delete(url, headers=headers)
+        if resp.status_code != 200:
+            resp.raise_for_status()
+
     def post_url(self, url, stream, headers={}):
         headers = headers.copy()
         headers["Authorization"] = "Bearer " + self.token
@@ -114,11 +120,15 @@ class Connection(object):
         return tree
 
 
-def itemId(url):
+def itemId(url, default_value=None):
     query = parse_qs(urlparse(url).query)
     if 'item_id' in query:
-        return query['item_id']
-    return query['itemId']
+        return query['item_id'][0]
+    elif 'itemId' in query:
+        return query['itemId'][0]
+    else:
+        logger.warn('Unexpected Query: {}'.format(str(query)))
+        return default_value
 
 def _connect(host, token):
     try:
@@ -192,6 +202,8 @@ def get_items(connection, index):
         items.append(Item(entry))
     return items
 
+def delete(connection, url):
+    connection.delete_url(url)
 
 def post(connection, insert_index_id, stream, stream_size):
     root = connection.get('servicedocument.php')
