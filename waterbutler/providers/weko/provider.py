@@ -185,6 +185,42 @@ class WEKOProvider(provider.BaseProvider):
                     for index in indices if str(index.parentIdentifier) == parent]
         return rindices + ritems
 
+    def can_intra_move(self, dest_provider, path=None):
+        logger.debug('can_intra_move: dest_provider={} path={}'.format(dest_provider.NAME, path))
+        return dest_provider.NAME == self.NAME and path.path.endswith('/')
+
+    async def intra_move(self, dest_provider, src_path, dest_path):
+        logger.debug('Moved: {}->{}'.format(src_path, dest_path))
+        indices = client.get_all_indices(self.connection)
+
+        if src_path.is_root:
+            src_path_id = str(self.index_id)
+        elif src_path.is_dir:
+            src_path_id = src_path.path.split('/')[-2]
+        else:
+            raise exceptions.MetadataError('unsupported', code=404)
+        if dest_path.is_root:
+            dest_path_id = str(self.index_id)
+        else:
+            dest_path_id = dest_path.path.split('/')[-2]
+
+        target_index = [index
+                        for index in indices
+                        if str(index.identifier) == src_path_id][0]
+        parent_index = [index
+                        for index in indices
+                        if str(index.identifier) == dest_path_id][0]
+        logger.info('Moving: Index {} to {}'.format(target_index.identifier,
+                                                    parent_index.identifier))
+        client.update_index(self.connection, target_index.identifier,
+                            relation=parent_index.identifier)
+
+        indices = client.get_all_indices(self.connection)
+        target_index = [index
+                        for index in indices
+                        if str(index.identifier) == src_path_id][0]
+        return WEKOIndexMetadata(target_index, indices), True
+
     async def revisions(self, path, **kwargs):
         """Get past versions of the request file. Orders versions based on
         `_get_all_data()`
