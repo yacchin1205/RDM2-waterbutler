@@ -13,7 +13,6 @@ from waterbutler.core.path import WaterButlerPath
 from waterbutler.core.utils import AsyncIterator
 
 from waterbutler.providers.weko import settings
-from waterbutler.providers.weko.metadata import WEKORevision
 from waterbutler.providers.weko.metadata import WEKOItemMetadata
 from waterbutler.providers.weko.metadata import WEKOIndexMetadata
 from waterbutler.providers.weko import client
@@ -30,11 +29,7 @@ class WEKOProvider(provider.BaseProvider):
         """
         :param dict auth: Not used
         :param dict credentials: Contains `token`
-        :param dict settings: Contains `host`, `doi`, `id`, and `name` of a dataset. Hosts::
-
-            - 'demo.dataverse.org': Harvard Demo Server
-            - 'dataverse.harvard.edu': Dataverse Production Server **(NO TEST DATA)**
-            - Other
+        :param dict settings: Contains `url`, `index_id` and `index_title` of a repository.
         """
         super().__init__(auth, credentials, settings)
         self.BASE_URL = self.settings['url']
@@ -47,7 +42,6 @@ class WEKOProvider(provider.BaseProvider):
         self._metadata_cache = {}
 
     def build_url(self, path, *segments, **query):
-        # Need to split up the dataverse subpaths and push them into segments
         return super().build_url(*(tuple(path.split('/')) + segments), **query)
 
     def can_duplicate_names(self):
@@ -57,7 +51,7 @@ class WEKOProvider(provider.BaseProvider):
         return await self.validate_path(path, **kwargs)
 
     async def validate_path(self, path, revision=None, **kwargs):
-        """Ensure path is in configured dataset
+        """Ensure path is in configured index
 
         :param str path: The path to a file
         :param list metadata: List of file metadata from _get_data
@@ -74,36 +68,12 @@ class WEKOProvider(provider.BaseProvider):
 
 
     async def download(self, path, revision=None, range=None, **kwargs):
-        """Returns a ResponseWrapper (Stream) for the specified path
-        raises FileNotFoundError if the status from Dataverse is not 200
-
-        :param str path: Path to the file you want to download
-        :param str revision: Used to verify if file is in selected dataset
-
-            - 'latest' to check draft files
-            - 'latest-published' to check published files
-            - None to check all data
-        :param dict \*\*kwargs: Additional arguments that are ignored
-        :rtype: :class:`waterbutler.core.streams.ResponseStreamReader`
-        :raises: :class:`waterbutler.core.exceptions.DownloadError`
-        """
-        if path.identifier is None:
-            raise exceptions.NotFoundError(str(path))
-
-        resp = await self.make_request(
-            'GET',
-            self.build_url(settings.DOWN_BASE_URL, path.identifier, key=self.token),
-            range=range,
-            expects=(200, 206),
-            throws=exceptions.DownloadError,
-        )
-        return streams.ResponseStreamReader(resp)
+        raise NotImplementedError()
 
     async def upload(self, stream, path, **kwargs):
-        """Zips the given stream then uploads to Dataverse.
-        This will delete existing draft files with the same name.
+        """uploads to WEKO.
 
-        :param waterbutler.core.streams.RequestWrapper stream: The stream to put to Dataverse
+        :param waterbutler.core.streams.RequestWrapper stream: The stream to put to WEKO
         :param str path: The filename prepended with '/'
 
         :rtype: dict, bool
@@ -222,15 +192,10 @@ class WEKOProvider(provider.BaseProvider):
         return WEKOIndexMetadata(target_index, indices), True
 
     async def revisions(self, path, **kwargs):
-        """Get past versions of the request file. Orders versions based on
-        `_get_all_data()`
+        """Get past versions of the request file.
 
         :param str path: The path to a key
         :rtype list:
         """
 
-        metadata = await self._get_data()
-        return [
-            WEKORevision(item.extra['datasetVersion'])
-            for item in metadata if item.extra['fileId'] == path.identifier
-        ]
+        return []

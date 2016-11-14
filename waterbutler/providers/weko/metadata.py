@@ -79,17 +79,3 @@ class WEKOIndexMetadata(BaseWEKOMetadata, metadata.BaseFolderMetadata):
             path = target.identifier + '/' + path
         return '/' + path
 
-
-class WEKORevision(metadata.BaseFileRevisionMetadata):
-
-    @property
-    def version_identifier(self):
-        return 'version'
-
-    @property
-    def version(self):
-        return self.raw
-
-    @property
-    def modified(self):
-        return None
