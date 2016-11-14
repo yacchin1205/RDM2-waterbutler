@@ -396,7 +396,8 @@ def create_import_xml(item_type, internal_item_type_id, uploaded_filename, title
             filename_body, filename_ext = os.path.splitext(uploaded_filename)
             file_elem.attrib['display_name'] = filename_body
             file_elem.attrib['display_type'] = '0'
-            file_elem.attrib['mime_type'] = mimetypes.guess_type(uploaded_filename)[0]
+            mime_type = mimetypes.guess_type(uploaded_filename)[0]
+            file_elem.attrib['mime_type'] = mime_type if mime_type is not None else 'application/octet-stream'
             file_elem.attrib['extension'] = filename_ext
             file_elem.attrib['license_id'] = '0'
             file_elem.attrib['license_notation'] = ''
