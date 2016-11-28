@@ -183,10 +183,10 @@ class AzureBlobStorageProvider(provider.BaseProvider):
             revision = None
         assert not path.path.startswith('/')
         try:
-            resp = self.connection.head_object(self.container, path.path)
+            resp = self.connection.get_blob_properties(self.container, path.path)
             return AzureBlobStorageFileMetadataHeaders(path.path, resp)
-        except azureblobstorage_exceptions.ClientException as e:
-            raise exceptions.MetadataError(str(e), code=e.http_status)
+        except AzureHttpError as e:
+            raise exceptions.MetadataError(str(e), code=e.status_code)
 
     async def _metadata_folder(self, path):
         objects = self.connection.list_blobs(self.container)
