@@ -49,7 +49,7 @@ setup(
             'owncloud = waterbutler.providers.owncloud:OwnCloudProvider',
             's3 = waterbutler.providers.s3:S3Provider',
             'swift = waterbutler.providers.swift:SwiftProvider',
-            'azureblobstorage = waterbutler.providers.azureblobStorage:AzureBlobStorageProvider',
+            'azureblobstorage = waterbutler.providers.azureblobstorage:AzureBlobStorageProvider',
             'dataverse = waterbutler.providers.dataverse:DataverseProvider',
             'weko = waterbutler.providers.weko:WEKOProvider',
             'box = waterbutler.providers.box:BoxProvider',
