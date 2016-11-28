@@ -8,8 +8,8 @@ import xmltodict
 
 import xml.sax.saxutils
 
-from azureblobstorageclient import Connection
-from azureblobstorageclient import exceptions as azureblobstorage_exceptions
+from azure.storage.blob import BlockBlobService
+from azure.common import AzureHttpError
 
 from waterbutler.core import streams
 from waterbutler.core import provider
@@ -35,11 +35,8 @@ class AzureBlobStorageProvider(provider.BaseProvider):
         """
         super().__init__(auth, credentials, settings)
 
-        self.connection = Connection(auth_version='2',
-                                     authurl='http://inter-auth.ecloud.nii.ac.jp:5000/v2.0/',
-                                     user=credentials['username'],
-                                     key=credentials['password'],
-                                     tenant_name=credentials['tenant_name'])
+        self.connection = BlockBlobService(account_name=credentials['account_name'],
+                                           account_key=credentials['account_key'])
 
         self.container = settings['container']
 
@@ -192,9 +189,9 @@ class AzureBlobStorageProvider(provider.BaseProvider):
             raise exceptions.MetadataError(str(e), code=e.http_status)
 
     async def _metadata_folder(self, path):
-        resp, objects = self.connection.get_container(self.container)
-        objects = list(map(lambda o: (o['name'][len(path.path):], o),
-                           filter(lambda o: o['name'].startswith(path.path),
+        objects = self.connection.list_blobs(self.container)
+        objects = list(map(lambda o: (o.name[len(path.path):], o),
+                           filter(lambda o: o.name.startswith(path.path),
                                   objects)))
         if len(objects) == 0:
             raise exceptions.MetadataError('Not found', code=404)

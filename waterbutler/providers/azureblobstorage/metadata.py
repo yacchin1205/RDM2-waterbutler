@@ -53,28 +53,28 @@ class AzureBlobStorageFileMetadata(AzureBlobStorageMetadata, metadata.BaseFileMe
 
     @property
     def path(self):
-        return '/' + self.raw['name']
+        return '/' + self.raw.name
 
     @property
     def size(self):
-        return int(self.raw['bytes'])
+        return int(self.raw.properties.content_length)
 
     @property
     def modified(self):
-        return self.raw['last_modified']
+        return self.raw.properties.last_modified.strftime('%Y-%m-%d %H:%M:%S')
 
     @property
     def content_type(self):
-        return self.raw['content_type']
+        return self.raw.properties.content_settings.content_type
 
     @property
     def etag(self):
-        return self.raw['hash']
+        return self.raw.properties.content_settings.content_md5
 
     @property
     def extra(self):
         return {
-            'md5': self.raw['hash']
+            'md5': self.raw.properties.content_settings.content_md5
         }
 
 
