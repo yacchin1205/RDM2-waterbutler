@@ -90,10 +90,10 @@ class AzureBlobStorageProvider(provider.BaseProvider):
             raise exceptions.DownloadError('No file specified for download', code=400)
 
         assert not path.path.startswith('/')
-        resp, content = self.connection.get_object(self.container,
-                                                   path.path)
-        stream = streams.StringStream(content)
-        stream.content_type = resp['content-type']
+        content = self.connection.get_blob_to_bytes(self.container,
+                                                    path.path)
+        stream = streams.StringStream(content.content)
+        stream.content_type = content.properties.content_settings.content_type
         return stream
 
     async def upload(self, stream, path, conflict='replace', **kwargs):
