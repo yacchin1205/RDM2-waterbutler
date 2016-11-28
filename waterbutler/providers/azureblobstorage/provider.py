@@ -48,13 +48,13 @@ class AzureBlobStorageProvider(provider.BaseProvider):
 
         assert path.startswith('/')
         if implicit_folder:
-            resp, objects = self.connection.get_container(self.container)
-            if len(list(filter(lambda o: o['name'].startswith(path[1:]),
+            objects = self.connection.list_blobs(self.container)
+            if len(list(filter(lambda o: o.name.startswith(path[1:]),
                                objects))) == 0:
                 raise exceptions.NotFoundError(str(path))
         else:
             try:
-                resp = self.connection.head_object(self.container, path[1:])
+                self.connection.get_blob_properties(self.container, path[1:])
             except azureblobstorage_exceptions.ClientException:
                 raise exceptions.NotFoundError(str(path))
 
@@ -175,7 +175,7 @@ class AzureBlobStorageProvider(provider.BaseProvider):
             if (await self.exists(path)):
                 raise exceptions.FolderNamingConflict(str(path))
 
-        self.connection.put_object(self.container, path.path + '.azureblobstoragekeep', '')
+        self.connection.create_blob_from_text(self.container, path.path + '.azureblobstoragekeep', '')
         return AzureBlobStorageFolderMetadata({'prefix': path.path})
 
     async def _metadata_file(self, path, revision=None):
