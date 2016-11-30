@@ -193,7 +193,7 @@ class AzureBlobStorageProvider(provider.BaseProvider):
         objects = list(map(lambda o: (o.name[len(path.path):], o),
                            filter(lambda o: o.name.startswith(path.path),
                                   objects)))
-        if len(objects) == 0:
+        if len(objects) == 0 and not path.is_root:
             raise exceptions.MetadataError('Not found', code=404)
 
         contents = list(filter(lambda o: '/' not in o[0], objects))
