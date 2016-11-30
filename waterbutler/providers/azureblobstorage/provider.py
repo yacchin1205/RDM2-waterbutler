@@ -138,7 +138,7 @@ class AzureBlobStorageProvider(provider.BaseProvider):
 
         if path.is_file:
             assert not path.path.startswith('/')
-            self.connection.delete_object(self.container, path.path)
+            self.connection.delete_blob(self.container, path.path)
         else:
             await self._delete_folder(path, **kwargs)
 
