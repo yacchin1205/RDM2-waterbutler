@@ -143,7 +143,14 @@ class AzureBlobStorageProvider(provider.BaseProvider):
             await self._delete_folder(path, **kwargs)
 
     async def _delete_folder(self, path, **kwargs):
-        raise NotImplementedError()
+        objects = self.connection.list_blobs(self.container)
+        objects = list(map(lambda o: (o.name[len(path.path):], o),
+                           filter(lambda o: o.name.startswith(path.path),
+                                  objects)))
+        if len(objects) == 0 and not path.is_root:
+            raise exceptions.DeleteError('Not found', code=404)
+        for name, blob in objects:
+            self.connection.delete_blob(self.container, blob.name)
 
     async def revisions(self, path, **kwargs):
         """Get past versions of the requested key
@@ -208,7 +215,9 @@ class AzureBlobStorageProvider(provider.BaseProvider):
         for content_path, content in contents:
             if content_path == path.path:
                 continue
-
-            items.append(AzureBlobStorageFileMetadata(content))
+            fmetadata = AzureBlobStorageFileMetadata(content)
+            if fmetadata.name == '.azureblobstoragekeep':
+                continue
+            items.append(fmetadata)
 
         return items
