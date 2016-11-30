@@ -117,8 +117,8 @@ class AzureBlobStorageProvider(provider.BaseProvider):
                     break
                 f.write(chunk)
             f.seek(0)
-            etag = self.connection.put_object(self.container, path.path, f)
-            assert etag == stream.writers['md5'].hexdigest
+            self.connection.create_blob_from_stream(self.container,
+                                                    path.path, f)
 
         return (await self.metadata(path, **kwargs)), not exists
 

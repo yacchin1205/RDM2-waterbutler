@@ -20,7 +20,7 @@ class AzureBlobStorageFileMetadataHeaders(AzureBlobStorageMetadata, metadata.Bas
         self._path = path
         # Cast to dict to clone as the headers will
         # be destroyed when the request leaves scope
-        super().__init__(dict(headers))
+        super().__init__(headers)
 
     @property
     def path(self):
@@ -28,24 +28,24 @@ class AzureBlobStorageFileMetadataHeaders(AzureBlobStorageMetadata, metadata.Bas
 
     @property
     def size(self):
-        return self.raw['content-length']
+        return self.raw.properties.content_length
 
     @property
     def content_type(self):
-        return self.raw['content-type']
+        return self.raw.properties.content_settings.content_type
 
     @property
     def modified(self):
-        return self.raw['last-modified']
+        return self.raw.properties.last_modified.strftime('%Y-%m-%d %H:%M:%S')
 
     @property
     def etag(self):
-        return self.raw['etag']
+        return self.raw.properties.content_settings.content_md5
 
     @property
     def extra(self):
         return {
-            'md5': self.raw['etag']
+            'md5': self.raw.properties.content_settings.content_md5
         }
 
 
