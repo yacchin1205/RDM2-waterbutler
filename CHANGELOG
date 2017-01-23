@@ -2,6 +2,29 @@
 ChangeLog
 *********
 
+0.29.0 (2016-12-14)
+===================
+- Feature: WaterButler now uses the V2 APIs for both Dropbox and Figshare.
+- Feature: Add a created timestamp to osfstorage file metadata.
+- Feature: Support the new Mumbai and Ohio regions in Amazon S3. (thanks, @erinspace!)
+- Feature: The server logs a message on startup, instead of just staring blankly at you.
+- Fix: Start appending extensions to Google Doc files to disambiguate identically-named
+files. e.g. foo.docx vs. foo.gsheet
+
+0.28.1 (2016-12-13)
+===================
+- Pin setuptools to v30.4.0 to avoid package-namespace-related breakage.
+
+0.28.0 (2016-10-31)
+===================
+- HALLOWEEN RELEASE! (^ ,–, ^)
+- Feature: Download-as-zip now includes empty directories! (thanks, @darioncassel!)
+- Feature: WaterButler now lists the full contents of Google Drive directories with more than 1,000
+children. (thanks, @TomBaxter!)
+- Feature: WaterButler now lists the full contents of Box.com directories with more than 1,000
+children. (thanks, @TomBaxter!)
+- Fix: Teach ownCloud to be more efficient about moving and copying files with a single provider.
+
 0.27.1 (2016-10-24)
 ===================
 - Fix: Fix broken Download-as-zip for GitHub by propagating the target branch during recursive
