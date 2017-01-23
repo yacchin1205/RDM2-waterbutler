@@ -68,7 +68,8 @@ class WEKOProvider(provider.BaseProvider):
 
 
     async def download(self, path, revision=None, range=None, **kwargs):
-        raise NotImplementedError()
+        # Dummy implementation for registration
+        return streams.StringStream('')
 
     async def upload(self, stream, path, **kwargs):
         """uploads to WEKO.
