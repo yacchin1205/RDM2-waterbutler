@@ -13,6 +13,10 @@ class SwiftMetadata(metadata.BaseMetadata):
     def name(self):
         return os.path.split(self.path)[1]
 
+    @property
+    def created_utc(self):
+        return None
+
 
 class SwiftFileMetadataHeaders(SwiftMetadata, metadata.BaseFileMetadata):
 

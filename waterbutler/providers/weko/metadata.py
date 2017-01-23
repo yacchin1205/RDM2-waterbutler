@@ -7,6 +7,10 @@ class BaseWEKOMetadata(metadata.BaseMetadata):
     def provider(self):
         return 'weko'
 
+    @property
+    def created_utc(self):
+        return None
+
 
 class WEKOItemMetadata(BaseWEKOMetadata, metadata.BaseFileMetadata):
     index = None
