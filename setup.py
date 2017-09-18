@@ -59,6 +59,7 @@ setup(
             'onedrive = waterbutler.providers.onedrive:OneDriveProvider',
             'swift = waterbutler.providers.swift:SwiftProvider',
             'azureblobstorage = waterbutler.providers.azureblobstorage:AzureBlobStorageProvider',
+            'weko = waterbutler.providers.weko:WEKOProvider',
         ],
         'waterbutler.providers.tasks': [
             'osfstorage_parity = waterbutler.providers.osfstorage.tasks.parity',
