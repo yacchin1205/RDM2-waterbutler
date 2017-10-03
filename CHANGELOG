@@ -2,6 +2,72 @@
 ChangeLog
 *********
 
+0.32.3 (2017-07-20)
+===================
+- Fix: Quiet some overly-verbose error logging.
+
+0.32.2 (2017-07-09)
+===================
+- Fix: Fix hanging figshare uploads by replacing a StreamReader.readexactly call with a
+StreamReader.read.  The underlying cause of this problem is still unknown.
+
+0.32.1 (2017-07-07)
+===================
+- Fix: Correctly format the Last-Modified header returned from v1 HEAD requests. WB had been
+setting it to the datetime format used by the provider, but we should be following the format laid
+out by RFC 7232, S2.2.  (thanks, @icereval and @luizirber!)
+
+0.32.0 (2017-06-14)
+===================
+- Fix: Send back the correct modified date when uploading a file to osfstorage. osfstorage had
+been sending back the modified date of the stored blob rather than the metadata from the OSF.
+- Fix: Support metadata and revisions for files shared on Google Drive with view- or comment-only
+permissions. Google Drive forbids access to the version-listing endpoint for these sorts of files,
+and WaterButler was not coping with that gracefully.
+- Fix: Update WaterButler tests to work on Python >= v3.5.3. A change to coroutine function
+detection in Python v3.5.3 and v3.6.0 was causing tests to fail, as the mocked coroutines were not
+being properly unwrapped.
+- Code: Add type annotations and a mypy test to the core WaterButler provider and the box, dropbox,
+googledrive, and figshare providers!  And lo, a new era of type-safety, strictness, and peace was
+ushered in, and its name was `inv mypy`. (thanks, @abought!)
+- Code: Add support for code-coverage checking via coveralls.io. (thanks, @abought!)
+
+0.31.1 (2017-06-01)
+===================
+- Fix: Fix OwnCloud issue that could result in folder creation outside the base folder.  OwnCloud
+was making assumptions about the formatting of the base folder that were not necessarily true.
+
+0.31.0 (2017-04-07)
+===================
+- Feature: Stop creating empty commits on GitHub when the requested action doesn't change the tree
+e.g. when updating a file with the exact same content as before.
+- Fix: Moving or copying a folder within osfstorage will now return the metadata for the folder's
+children in the response.
+- Fix: Reject PATCH requests gracefully, instead of 500-ing.
+- Fix: Disallow accessing Google Docs (.gdoc, .gsheet, etc.) without the extension.
+- Fix: Fix poor error handling in Dropbox provider.
+- Fix: Log WaitTimeoutErrors as log level info to Sentry. These are expected and shouldn't be
+considered full errors.
+
+0.30.0 (2017-02-02)
+===================
+- Feature: Support the new London and Central Canada regions in Amazon S3. (thanks, @johnetordoff!)
+- Feature: Include provider-specific metrics in metric logging payloads, including number of
+requests issued.
+- Fix: Don't crash when fetching file revision metadata from Google Drive.
+- Fix: WaterButler docs are once again building on readthedocs.org! (thanks, @johnetordoff!)
+- Code: Update WaterButler to use invoke 0.13.0. If you have an existing checkout, you will need to
+upgrade invoke manually: pip install invoke==0.13.0 (thanks, @johnetordoff!)
+- Code: Postman collections to test file and folder copy behavior for providers have been added to
+tests/postman/.  See docs/testing.rst for instructions on setting up and running them.
+- Docs: WaterButler has been verified to work with python 3.5.3 and 3.6.0. From now on, the docs
+will mention which python versions WB has been verfied to work on. (thanks, @johnetordoff!)
+
+0.29.1 (2017-01-04)
+===================
+- Happy New Year!
+- Fix: Be more ruthless about fixing setuptools breakage in Dockerfile. (thanks, @cwisecarver!)
+
 0.29.0 (2016-12-14)
 ===================
 - Feature: WaterButler now uses the V2 APIs for both Dropbox and Figshare.

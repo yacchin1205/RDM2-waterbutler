@@ -41,9 +41,13 @@ class OwnCloudProvider(provider.BaseProvider):
         super().__init__(auth, credentials, settings)
 
         self.folder = settings['folder']
+        if not self.folder.endswith('/'):
+            self.folder += '/'
+
         self.verify_ssl = settings['verify_ssl']
         self.url = credentials['host']
         self._auth = aiohttp.BasicAuth(credentials['username'], credentials['password'])
+        self.metrics.add('host', self.url)
 
     def connector(self):
         return aiohttp.TCPConnector(verify_ssl=self.verify_ssl)
@@ -138,6 +142,11 @@ class OwnCloudProvider(provider.BaseProvider):
         :param waterbutler.core.path.WaterButlerPath path: user-supplied path to download
         :raises: `waterbutler.core.exceptions.DownloadError`
         """
+
+        self.metrics.add('download', {
+            'got_accept_url': accept_url is False,
+            'got_range': range is not None,
+        })
         download_resp = await self.make_request(
             'GET',
             self._webdav_url_ + path.full_path,
@@ -241,7 +250,7 @@ class OwnCloudProvider(provider.BaseProvider):
         """
         resp = await self.make_request(
             'MKCOL',
-            self._webdav_url_ + self.folder + path.path,
+            self._webdav_url_ + path.full_path,
             expects=(201, 405),
             throws=exceptions.CreateFolderError,
             auth=self._auth,
@@ -284,7 +293,7 @@ class OwnCloudProvider(provider.BaseProvider):
 
         resp = await self.make_request(
             operation,
-            self._webdav_url_ + self.folder + src_path.path,
+            self._webdav_url_ + src_path.full_path,
             expects=(201, 204),  # WebDAV MOVE/COPY: 201 = Created, 204 = Updated existing
             throws=exceptions.IntraCopyError,
             auth=self._auth,

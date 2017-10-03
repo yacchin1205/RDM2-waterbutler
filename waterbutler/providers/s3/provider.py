@@ -8,7 +8,7 @@ import xmltodict
 import xml.sax.saxutils
 
 from boto import config as boto_config
-from boto.compat import BytesIO
+from boto.compat import BytesIO  # type: ignore
 from boto.utils import compute_md5
 from boto.auth import get_auth_handler
 from boto.s3.connection import S3Connection
@@ -495,6 +495,8 @@ class S3Provider(provider.BaseProvider):
                 self.connection.host = self.connection.host.replace('s3.', 's3-' + self.region + '.', 1)
                 self.connection._auth_handler = get_auth_handler(
                     self.connection.host, boto_config, self.connection.provider, self.connection._required_auth_capability())
+
+        self.metrics.add('region', self.region)
 
     async def _get_bucket_region(self):
         """Bucket names are unique across all regions.
