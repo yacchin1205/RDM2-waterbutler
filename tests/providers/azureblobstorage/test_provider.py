@@ -1,5 +1,6 @@
 import pytest
 
+import math
 import io
 import time
 import base64
@@ -17,6 +18,9 @@ from waterbutler.core.path import WaterButlerPath
 from waterbutler.providers.azureblobstorage import AzureBlobStorageProvider
 from waterbutler.providers.azureblobstorage.metadata import AzureBlobStorageFileMetadata
 from waterbutler.providers.azureblobstorage.metadata import AzureBlobStorageFolderMetadata
+from waterbutler.providers.azureblobstorage.provider import (
+    MAX_UPLOAD_BLOCK_SIZE,
+)
 
 
 @pytest.fixture
@@ -66,6 +70,22 @@ def file_like(file_content):
 @pytest.fixture
 def file_stream(file_like):
     return streams.FileStreamReader(file_like)
+
+
+@pytest.fixture
+def large_file_content():
+    # 71MB (4MB * 17 + 3MB)
+    return b'a' * (71 * (2 ** 20))
+
+
+@pytest.fixture
+def large_file_like(large_file_content):
+    return io.BytesIO(large_file_content)
+
+
+@pytest.fixture
+def large_file_stream(large_file_like):
+    return streams.FileStreamReader(large_file_like)
 
 
 @pytest.fixture
@@ -133,6 +153,24 @@ def folder_metadata():
 def file_metadata():
     return {
         'CONTENT-LENGTH': '0',
+        'CONTENT-TYPE': 'text/plain',
+        'LAST-MODIFIED': 'Thu, 10 Nov 2016 11:04:45 GMT',
+        'ACCEPT-RANGES': 'bytes',
+        'ETAG': '"0x8D40959613D32F6"',
+        'SERVER': 'Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0',
+        'X-MS-REQUEST-ID': '5b4a3cb6-0001-00ea-4575-895e2c000000',
+        'X-MS-VERSION': '2015-07-08',
+        'X-MS-LEASE-STATUS': 'unlocked',
+        'X-MS-LEASE-STATE': 'available',
+        'X-MS-BLOB-TYPE': 'BlockBlob',
+        'DATE': 'Fri, 17 Feb 2017 23:28:33 GMT'
+    }
+
+
+@pytest.fixture
+def large_file_metadata(large_file_content):
+    return {
+        'CONTENT-LENGTH': str(len(large_file_content)),
         'CONTENT-TYPE': 'text/plain',
         'LAST-MODIFIED': 'Thu, 10 Nov 2016 11:04:45 GMT',
         'ACCEPT-RANGES': 'bytes',
@@ -384,6 +422,41 @@ class TestMetadata:
         assert metadata.kind == 'file'
         assert created
         assert aiohttpretty.has_call(method='PUT', uri=url)
+        assert aiohttpretty.has_call(method='HEAD', uri=metadata_url)
+
+    @pytest.mark.asyncio
+    @pytest.mark.aiohttpretty
+    async def test_upload_large(self, provider, large_file_content, large_file_stream, large_file_metadata, mock_time):
+        # upload 4MB data 17 times and 3MB once, and request block_list
+        upload_times = math.floor(len(large_file_content) / MAX_UPLOAD_BLOCK_SIZE)
+        block_id_prefix = 'hogefuga'
+        block_id_list = [AzureBlobStorageProvider._format_block_id(block_id_prefix, i) for i in range(upload_times)]
+        block_req_params_list = [{'comp': 'block', 'blockid': block_id} for block_id in block_id_list]
+        block_list_req_params = {'comp': 'blocklist'}
+
+        path = WaterButlerPath('/large_foobah')
+
+        for url in provider.generate_urls(path.path):
+            for block_req_params in block_req_params_list:
+                aiohttpretty.register_uri('PUT', url, status=200, params=block_req_params)
+            aiohttpretty.register_uri('PUT', url, status=200, params=block_list_req_params)
+        for metadata_url in provider.generate_urls(path.path):
+            aiohttpretty.register_uri(
+                'HEAD',
+                metadata_url,
+                responses=[
+                    {'status': 404},
+                    {'headers': large_file_metadata},
+                ],
+            )
+
+        metadata, created = await provider.upload(large_file_stream, path, block_id_prefix=block_id_prefix)
+
+        assert metadata.kind == 'file'
+        assert created
+        for block_req_params in block_req_params_list:
+            assert aiohttpretty.has_call(method='PUT', uri=url, params=block_req_params)
+        assert aiohttpretty.has_call(method='PUT', uri=url, params=block_list_req_params)
         assert aiohttpretty.has_call(method='HEAD', uri=metadata_url)
 
 

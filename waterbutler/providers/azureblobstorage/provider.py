@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import asyncio
 import aiohttp
@@ -22,10 +23,15 @@ from waterbutler.core import streams
 from waterbutler.core import provider
 from waterbutler.core import exceptions
 from waterbutler.core.path import WaterButlerPath
+from waterbutler.core.streams import StringStream, ByteStream
 
 from waterbutler.providers.azureblobstorage.metadata import AzureBlobStorageFileMetadata
 from waterbutler.providers.azureblobstorage.metadata import AzureBlobStorageFolderMetadata
 from waterbutler.providers.azureblobstorage.metadata import AzureBlobStorageFileMetadataHeaders
+
+MAX_UPLOAD_BLOCK_SIZE = 4 * 1024 * 1024  # 4MB
+MAX_UPLOAD_ONCE_SIZE = 64 * 1024 * 1024  # 64MB
+UPLOAD_PARALLEL_NUM = 2  # must be more than 1
 
 
 class _Request(object):
@@ -204,7 +210,7 @@ class AzureBlobStorageProvider(provider.BaseProvider):
 
         return streams.ResponseStreamReader(resp)
 
-    async def upload(self, stream, path, conflict='replace', **kwargs):
+    async def upload(self, stream, path, conflict='replace', block_id_prefix=None, **kwargs):
         """Uploads the given stream to Azure Blob Storage
 
         :param waterbutler.core.streams.RequestWrapper stream: The stream to put to Azure Blob Storage
@@ -214,10 +220,41 @@ class AzureBlobStorageProvider(provider.BaseProvider):
         """
 
         path, exists = await self.handle_name_conflict(path, conflict=conflict)
+        assert not path.path.startswith('/')
+
+        if block_id_prefix is None:
+            block_id_prefix = str(uuid.uuid4())
+
+        # upload stream at once if the stream size is less than or equal to MAX_UPLOAD_ONCE_SIZE,
+        # otherwise upload sub streams divided into MAX_UPLOAD_BLOCK_SIZE or less.
+        if stream.size <= MAX_UPLOAD_ONCE_SIZE:
+            await self._upload_at_once(stream, path)
+        else:
+            block_id_list = []
+            lock = asyncio.Lock()
+
+            async def sub_upload():
+                while True:
+                    with await lock:
+                        sub_stream = ByteStream(await stream.read(MAX_UPLOAD_BLOCK_SIZE))
+                        if sub_stream.size == 0:
+                            return
+
+                        block_id = self._format_block_id(block_id_prefix, len(block_id_list))
+                        block_id_list.append(block_id)
+
+                    await self._put_block(sub_stream, path, block_id)
+
+            tasks = [sub_upload() for _ in range(UPLOAD_PARALLEL_NUM)]
+            await asyncio.wait(tasks)
+
+            await self._put_block_list(path, block_id_list)
+
+        return (await self.metadata(path, **kwargs)), not exists
+
+    async def _upload_at_once(self, stream, path):
         stream.add_writer('md5', streams.HashStreamWriter(hashlib.md5))
         headers = {'Content-Length': str(stream.size), 'x-ms-blob-type': 'BlockBlob'}
-
-        assert not path.path.startswith('/')
 
         resp = await self.make_signed_request(
             'PUT',
@@ -230,7 +267,52 @@ class AzureBlobStorageProvider(provider.BaseProvider):
         )
         await resp.release()
 
-        return (await self.metadata(path, **kwargs)), not exists
+    async def _put_block(self, stream, path, block_id):
+        stream.add_writer('md5', streams.HashStreamWriter(hashlib.md5))
+        query = {'comp': 'block', 'blockid': block_id}
+        headers = {'Content-Length': str(stream.size)}
+
+        resp = await self.make_signed_request(
+            'PUT',
+            functools.partial(self.generate_urls, path.path),
+            data=stream,
+            headers=headers,
+            params=query,
+            skip_auto_headers={'CONTENT-TYPE'},
+            expects=(200, 201, 202, ),
+            throws=exceptions.UploadError,
+        )
+        await resp.release()
+
+    async def _put_block_list(self, path, block_id_list):
+        xml = '<?xml version="1.0" encoding="utf-8"?><BlockList>' + \
+              ''.join(map(lambda x: '<Uncommitted>%s</Uncommitted>' % x, block_id_list)) + \
+              '</BlockList>'
+        stream = StringStream(xml)
+
+        query = {'comp': 'blocklist'}
+        headers = {'Content-Length': str(stream.size)}
+
+        resp = await self.make_signed_request(
+            'PUT',
+            functools.partial(self.generate_urls, path.path),
+            headers=headers,
+            params=query,
+            data=stream,
+            skip_auto_headers={'CONTENT-TYPE'},
+            expects=(200, 201, 202, ),
+            throws=exceptions.UploadError,
+        )
+        await resp.release()
+
+    @staticmethod
+    def _format_block_id(prefix, index):
+        # block_id = base64encode(PREFIX + sequential number)
+        # The sequential number is represented by 5 digits of 0 filling
+        # because all block_id must have the same number of digits and
+        # the maximum number of blocks is 50,000.
+        s = '%s_%05d' % (prefix, index)
+        return base64.urlsafe_b64encode(s.encode('utf-8')).decode('utf-8')
 
     async def delete(self, path, confirm_delete=0, **kwargs):
         """Deletes the key at the specified path
