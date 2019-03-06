@@ -57,6 +57,11 @@ setup(
             'box = waterbutler.providers.box:BoxProvider',
             'googledrive = waterbutler.providers.googledrive:GoogleDriveProvider',
             'onedrive = waterbutler.providers.onedrive:OneDriveProvider',
+            'swift = waterbutler.providers.swift:SwiftProvider',
+            'azureblobstorage = waterbutler.providers.azureblobstorage:AzureBlobStorageProvider',
+            'weko = waterbutler.providers.weko:WEKOProvider',
+            's3compat = waterbutler.providers.s3compat:S3CompatProvider',
+            'nextcloud = waterbutler.providers.nextcloud:NextcloudProvider',
         ],
         'waterbutler.providers.tasks': [
             'osfstorage_parity = waterbutler.providers.osfstorage.tasks.parity',
