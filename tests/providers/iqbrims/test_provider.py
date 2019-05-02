@@ -1298,12 +1298,6 @@ class TestOperationsOrMisc:
 class TestReadOnlyProvider:
 
     @pytest.mark.asyncio
-    async def test_upload(self, provider):
-        with pytest.raises(exceptions.ReadOnlyProviderError) as e:
-            await provider.upload('/foo-file.txt')
-        assert e.value.code == 501
-
-    @pytest.mark.asyncio
     async def test_create_folder(self, provider):
         with pytest.raises(exceptions.ReadOnlyProviderError) as e:
             await provider.create_folder('foo')
