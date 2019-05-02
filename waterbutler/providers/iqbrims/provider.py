@@ -1,13 +1,16 @@
 import os
 import typing
 import functools
+import hashlib
 from urllib import parse
 from http import HTTPStatus
+from typing import Tuple
 
 from waterbutler.core import streams
 from waterbutler.core import provider
 from waterbutler.core import exceptions
 from waterbutler.core import path as wb_path
+from waterbutler.core.path import WaterButlerPath
 
 from waterbutler.providers.iqbrims import settings
 from waterbutler.providers.iqbrims import utils as drive_utils
@@ -185,7 +188,7 @@ class IQBRIMSProvider(provider.BaseProvider):
                      stream,
                      path: WaterButlerPath,
                      *args,
-                     **kwargs) -> Tuple[GoogleDriveFileMetadata, bool]:
+                     **kwargs) -> Tuple[IQBRIMSFileMetadata, bool]:
         assert path.is_file
 
         if path.identifier:
