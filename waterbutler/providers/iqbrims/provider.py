@@ -2,9 +2,12 @@ import os
 import typing
 import functools
 import hashlib
+import json
 from urllib import parse
 from http import HTTPStatus
-from typing import Tuple
+from typing import Sequence, Tuple
+
+import furl
 
 from waterbutler.core import streams
 from waterbutler.core import provider
@@ -450,7 +453,7 @@ class IQBRIMSProvider(provider.BaseProvider):
             return await resp.json()
 
     def _build_upload_url(self, *segments, **query):
-        return provider.build_url(pd_settings.BASE_UPLOAD_URL, *segments, **query)
+        return provider.build_url(settings.BASE_UPLOAD_URL, *segments, **query)
 
     async def _folder_metadata(self, path: wb_path.WaterButlerPath, raw: bool=False) \
             -> typing.List[typing.Union[BaseIQBRIMSMetadata, dict]]:
