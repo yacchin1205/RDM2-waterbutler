@@ -408,6 +408,17 @@ class IQBRIMSProvider(provider.BaseProvider):
 
         return self._serialize_item(path, item, raw=raw)
 
+    def _build_upload_metadata(self, folder_id: str, name: str) -> dict:
+        return {
+            'parents': [
+                {
+                    'kind': 'drive#parentReference',
+                    'id': folder_id,
+                },
+            ],
+            'title': name,
+        }
+
     async def _folder_metadata(self, path: wb_path.WaterButlerPath, raw: bool=False) \
             -> typing.List[typing.Union[BaseIQBRIMSMetadata, dict]]:
         query = self._build_query(path.identifier)
