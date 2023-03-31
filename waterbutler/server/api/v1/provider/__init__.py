@@ -74,9 +74,11 @@ class ProviderHandler(core.BaseHandler, CreateMixin, MetadataMixin, MoveCopyMixi
 
         # Delay setup of the provider when method is post, as we need to evaluate the json body
         # action.
+        some_param = self.arguments.get('some_param', '')
         if method != 'post':
             self.auth = await auth_handler.get(self.resource, provider, self.request,
-                                               path=self.path, version=self.requested_version)
+                                               path=self.path, version=self.requested_version,
+                                               some_param=some_param)
             self.provider = utils.make_provider(provider, self.auth['auth'],
                                                 self.auth['credentials'], self.auth['settings'])
             self.path = await self.provider.validate_v1_path(self.path, **self.arguments)

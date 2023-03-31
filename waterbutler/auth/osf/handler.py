@@ -101,7 +101,7 @@ class OsfAuthHandler(BaseAuthHandler):
         return payload
 
     async def get(self, resource, provider, request, action=None, auth_type=AuthType.SOURCE,
-                  path='', version=None):
+                  path='', version=None, some_param=''):
         """Used for v1"""
         method = request.method.lower()
 
@@ -163,7 +163,8 @@ class OsfAuthHandler(BaseAuthHandler):
                     'user_agent': request.headers.get('User-Agent'),
                     'origin': request.headers.get('Origin'),
                     'uri': request.uri,
-                }
+                },
+                'some_param': some_param,
             }, cookie=cookie, view_only=view_only),
             headers,
             dict(request.cookies)
