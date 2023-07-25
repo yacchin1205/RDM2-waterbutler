@@ -1458,11 +1458,10 @@ class TestMetadata:
         result = await provider.metadata(path, revision=None, next_token='')
 
         assert isinstance(result, list)
-        assert len(result) == 4
+        assert len(result) == 3
         assert result[0].name == '   photos'
         assert result[1].name == 'my-image.jpg'
         assert result[2].extra['md5'] == '1b2cf535f27731c974343645a3985328'
-        assert result[3] == ''
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1477,11 +1476,10 @@ class TestMetadata:
         result = await provider._metadata_folder(path, next_token='')
 
         assert isinstance(result, list)
-        assert len(result) == 4
+        assert len(result) == 3
         assert result[0].name == '   photos'
         assert result[1].name == 'my-image.jpg'
         assert result[2].extra['md5'] == '1b2cf535f27731c974343645a3985328'
-        assert result[3] == ''
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1755,8 +1753,8 @@ class TestOperations:
         assert aiohttpretty.has_call(method='GET', uri=url, params=params)
 
     async def test_equality(self, provider, mock_time):
-        assert provider.can_intra_copy(provider)
-        assert provider.can_intra_move(provider)
+        assert not provider.can_intra_copy(provider)
+        assert not provider.can_intra_move(provider)
 
     @pytest.mark.asyncio
     @pytest.mark.aiohttpretty
@@ -1788,8 +1786,8 @@ class TestOperations:
         file_path = WaterButlerPath('/my-image.jpg', prepend=provider.prefix)
         folder_path = WaterButlerPath('/folder/', folder=True, prepend=provider.prefix)
 
-        assert provider.can_intra_move(provider)
-        assert provider.can_intra_move(provider, file_path)
+        assert not provider.can_intra_move(provider)
+        assert not provider.can_intra_move(provider, file_path)
         assert not provider.can_intra_move(provider, folder_path)
 
     def test_can_intra_copy(self, provider):
@@ -1797,8 +1795,8 @@ class TestOperations:
         file_path = WaterButlerPath('/my-image.jpg', prepend=provider.prefix)
         folder_path = WaterButlerPath('/folder/', folder=True, prepend=provider.prefix)
 
-        assert provider.can_intra_copy(provider)
-        assert provider.can_intra_copy(provider, file_path)
+        assert not provider.can_intra_copy(provider)
+        assert not provider.can_intra_copy(provider, file_path)
         assert not provider.can_intra_copy(provider, folder_path)
 
     def test_can_duplicate_names(self, provider):

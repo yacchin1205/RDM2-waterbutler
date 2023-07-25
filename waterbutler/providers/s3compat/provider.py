@@ -146,10 +146,10 @@ class S3CompatProvider(provider.BaseProvider):
         return True
 
     def can_intra_copy(self, dest_provider, path=None):
-        return type(self) == type(dest_provider) and not getattr(path, 'is_dir', False)
+        return False
 
     def can_intra_move(self, dest_provider, path=None):
-        return type(self) == type(dest_provider) and not getattr(path, 'is_dir', False)
+        return False
 
     async def intra_copy(self, dest_provider, source_path, dest_path):
         """Copy key from one S3 Compatible Storage bucket to another. The credentials specified in
@@ -782,6 +782,6 @@ class S3CompatProvider(provider.BaseProvider):
             else:
                 items.append(S3CompatFileMetadata(self, content))
 
-        if next_token is not None:
+        if next_token_string:
             items.append(next_token_string)
         return items
