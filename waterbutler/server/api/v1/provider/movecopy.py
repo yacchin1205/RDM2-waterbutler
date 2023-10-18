@@ -11,6 +11,7 @@ from waterbutler.server.auth import AuthHandler
 from waterbutler.core.utils import make_provider
 from waterbutler.constants import DEFAULT_CONFLICT
 from waterbutler.auth.osf.handler import EXPORT_DATA_FAKE_NODE_ID
+from waterbutler.tasks.settings import EXPORT_RESTORE_TIMEOUT
 
 auth_handler = AuthHandler(settings.AUTH_HANDLERS)
 
@@ -144,17 +145,30 @@ class MoveCopyMixin:
             )
             self.dest_path = await self.dest_provider.validate_path(**self.json)
 
+        # Check if this process is related to export/restore process
+        access_to_location_storage = self.resource == EXPORT_DATA_FAKE_NODE_ID or self.dest_resource == EXPORT_DATA_FAKE_NODE_ID
+        is_export_or_restore_process = provider_action == 'copy' and access_to_location_storage and self.location_id is not None
+
         if not getattr(self.provider, 'can_intra_' + provider_action)(self.dest_provider, self.path):
             # this weird signature syntax courtesy of py3.4 not liking trailing commas on kwargs
             conflict = self.json.get('conflict', DEFAULT_CONFLICT)
+            task_kwargs = {}
+            if provider_action == 'copy':
+                # Only copy API has additional 'version' argument
+                task_kwargs = {'version': self.requested_version}
             result = await getattr(tasks, provider_action).adelay(
                 rename=self.json.get('rename'),
                 conflict=conflict,
-                version=self.requested_version,
                 request=remote_logging._serialize_request(self.request),
-                *self.build_args()
+                *self.build_args(),
+                **task_kwargs,
             )
-            metadata, created = await tasks.wait_on_celery(result)
+            if is_export_or_restore_process:
+                # If this is export or restore process then use custom timeout value
+                metadata, created = await tasks.wait_on_celery(result, timeout=EXPORT_RESTORE_TIMEOUT)
+            else:
+                # For other existing process, use default timeout value
+                metadata, created = await tasks.wait_on_celery(result)
         else:
             metadata, created = (
                 await tasks.backgrounded(
