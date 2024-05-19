@@ -1,8 +1,5 @@
-import os
 import re
 from waterbutler.core import metadata
-
-from .schema import to_metadata
 
 
 ITEM_PREFIX = 'weko:'
@@ -17,19 +14,6 @@ def parse_item_file_id(part):
     if not m:
         return None
     return m.group(1)
-
-
-def get_files(directory, relative=''):
-    files = []
-    for f in os.listdir(directory):
-        if os.path.isfile(os.path.join(directory, f)):
-            files.append(os.path.join(relative, f) if len(relative) > 0 else f)
-        elif os.path.isdir(os.path.join(directory, f)):
-            for child in get_files(os.path.join(directory, f),
-                                   os.path.join(relative, f)
-                                   if len(relative) > 0 else f):
-                files.append(child)
-    return files
 
 
 def _index_to_path_parts(target):
@@ -126,31 +110,33 @@ class WEKOFileMetadata(BaseWEKOMetadata, metadata.BaseFileMetadata):
         return {
             'weko': 'file',
             'itemId': self.item_file_id,
-            'metadata': None,
+            'metadata': {
+                'can_edit': False,
+                'can_register': False,
+            },
         }
 
 
 class WEKOItemMetadata(BaseWEKOMetadata, metadata.BaseFolderMetadata):
     file_id = None
     provider_name = None
-    metadata_schema_id = None
     index_identifier = None
     index_path = None
     index_materialized_path = None
     item_file_id = None
     weko_web_url = None
 
-    def __init__(self, client, raw, index, provider_name, metadata_schema_id):
+    def __init__(self, client, raw, index, provider_name):
         super().__init__({
             'primary_title': raw.primary_title,
             'metadata': raw.raw['metadata'],
         })
         self.file_id = _get_item_file_id(raw)
+        self.item_identifier = raw.identifier
         self.index_identifier = index.identifier
         self.index_path = _index_to_path(index)
         self.index_materialized_path = _index_to_materialized_path(index)
         self.provider_name = provider_name
-        self.metadata_schema_id = metadata_schema_id
         self.weko_web_url = client.get_item_records_url(str(raw.identifier))
 
     @property
@@ -191,24 +177,10 @@ class WEKOItemMetadata(BaseWEKOMetadata, metadata.BaseFolderMetadata):
             'weko': 'item',
             'weko_web_url': self.weko_web_url,
             'fileId': self.file_id,
-            'metadata': self._to_metadata(),
-        }
-
-    def _to_metadata(self):
-        if self.metadata_schema_id is None:
-            return None
-        return {
-            'folder': False,
-            'generated': False,
-            'path': self.provider_name + self.path,
-            'items': [
-                {
-                    'active': True,
-                    'data': to_metadata(self.metadata_schema_id, self.raw),
-                    'schema': self.metadata_schema_id,
-                    'readonly': True,
-                }
-            ],
+            'metadata': {
+                'can_edit': False,
+                'can_register': False,
+            },
         }
 
 
@@ -249,7 +221,10 @@ class WEKOIndexMetadata(BaseWEKOMetadata, metadata.BaseFolderMetadata):
             'weko': 'index',
             'weko_web_url': self.weko_web_url,
             'indexId': self.index_identifier,
-            'metadata': None,
+            'metadata': {
+                'can_edit': False,
+                'can_register': False,
+            },
         }
 
 
@@ -271,6 +246,10 @@ class BaseWEKODraftMetadata(BaseWEKOMetadata):
         r = {
             'weko': 'draft',
             'index': self.index_identifier,
+            'metadata': {
+                'can_edit': True,
+                'can_register': False,
+            },
             'source': {
                 'provider': self.raw.provider,
                 'path': self.raw.path,

@@ -22,14 +22,6 @@ logger = logging.getLogger(__name__)
 METADATA_JSON_SUFFIX = '-metadata.json'
 
 
-def has_title_as_path(index_or_item, path):
-    title = index_or_item.title
-    if isinstance(title, str):
-        return title == path
-    # list
-    return title[0] == path
-
-
 class WEKOPathPart(WaterButlerPathPart):
 
     @property
@@ -149,7 +141,6 @@ class WEKOProvider(provider.BaseProvider):
         self.user_id = self.credentials['user_id']
         self.index_id = self.settings['index_id']
         self.index_title = self.settings['index_title']
-        self.metadata_schema_id = self.settings.get('metadata_schema_id', None)
         self.default_storage_credentials = credentials.get('default_storage', None)
         self.default_storage_settings = settings.get('default_storage', None)
         self.client = Client(
@@ -242,9 +233,9 @@ class WEKOProvider(provider.BaseProvider):
 
     def _metadata_to_id(self, metadata):
         if isinstance(metadata, WEKOIndexMetadata):
-            return ('index', metadata.raw.identifier, metadata.name)
+            return ('index', metadata.index_identifier, metadata.name)
         if isinstance(metadata, WEKOItemMetadata):
-            return ('item', metadata.raw.identifier, metadata.name)
+            return ('item', metadata.item_identifier, metadata.name)
         if isinstance(metadata, WEKOFileMetadata):
             return ('item_file', metadata.name, metadata.name)
         if isinstance(metadata, WEKODraftFileMetadata):
@@ -412,7 +403,7 @@ class WEKOProvider(provider.BaseProvider):
 
     async def get_index_metadata(self, index):
         ritems = [
-            WEKOItemMetadata(self.client, item, index, self.NAME, self.metadata_schema_id)
+            WEKOItemMetadata(self.client, item, index, self.NAME)
             for item in await index.get_items()
         ]
         rindices = [WEKOIndexMetadata(self.client, i) for i in index.children]
