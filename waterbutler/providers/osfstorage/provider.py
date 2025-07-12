@@ -223,8 +223,10 @@ class OSFStorageProvider(provider.BaseProvider):
             'version': data['data']['version'],
             'downloads': data['data']['downloads'],
             'checkout': data['data']['checkout'],
+            'locked': data['data'].get('locked', False),
             'modified': data['data']['modified'],
             'modified_utc': utils.normalize_datetime(data['data']['modified']),
+            'created_utc': utils.normalize_datetime(data['data']['created']),
         })
 
         path._parts[-1]._id = metadata['path'].strip('/')
