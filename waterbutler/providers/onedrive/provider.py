@@ -251,7 +251,13 @@ class OneDriveProvider(provider.BaseProvider):
         if path.api_identifier is None:  # TESTME
             raise exceptions.NotFoundError(str(path))
 
-        url = self._build_drive_url(*path.api_identifier, **{'$expand': 'children'})
+        # Only folders support expanding children.  Microsoft Graph seems to have started
+        # returning a 422 (getChildrenOnNonFolder) for ``$expand=children`` on non-folder
+        # items around 2026-03, so request the children expansion for folders only.
+        if path.is_dir:
+            url = self._build_drive_url(*path.api_identifier, **{'$expand': 'children'})
+        else:
+            url = self._build_drive_url(*path.api_identifier)
         logger.debug("metadata url::{}".format(repr(url)))
         resp = await self.make_request(
             'GET',

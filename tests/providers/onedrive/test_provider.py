@@ -339,7 +339,8 @@ class TestMetadata:
         path = OneDrivePath('/{}'.format(file_name),
                             _ids=(subfolder_provider_fixtures['root_id'], file_id, ))
 
-        list_url = subfolder_provider._build_drive_url(*path.api_identifier, expand='children')
+        # A file is not a folder, so its metadata must be fetched without ``$expand=children``.
+        list_url = subfolder_provider._build_drive_url(*path.api_identifier)
         aiohttpretty.register_json_uri('GET', list_url, body=file_metadata)
 
         result = await subfolder_provider.metadata(path)
@@ -550,7 +551,7 @@ class TestDownload:
         path = OneDrivePath('/toes.txt', _ids=[download_fixtures['root_id'], file_id])
 
         metadata_response = download_fixtures['file_metadata']
-        metadata_url = provider._build_drive_url('items', file_id, **{'$expand': 'children'})
+        metadata_url = provider._build_drive_url('items', file_id)
         aiohttpretty.register_json_uri('GET', metadata_url, body=metadata_response)
 
         aiohttpretty.register_uri('GET', download_fixtures['file_download_url'],
@@ -568,7 +569,7 @@ class TestDownload:
         path = OneDrivePath('/toes.txt', _ids=[download_fixtures['root_id'], file_id])
 
         metadata_response = download_fixtures['file_metadata']
-        metadata_url = provider._build_drive_url('items', file_id, **{'$expand': 'children'})
+        metadata_url = provider._build_drive_url('items', file_id)
         aiohttpretty.register_json_uri('GET', metadata_url, body=metadata_response)
 
         download_url = download_fixtures['file_download_url']
@@ -629,7 +630,7 @@ class TestDownload:
         path = OneDrivePath('/onenote', _ids=[download_fixtures['root_id'], onenote_id])
 
         metadata_response = download_fixtures['onenote_metadata']
-        metadata_url = provider._build_drive_url('items', onenote_id, **{'$expand': 'children'})
+        metadata_url = provider._build_drive_url('items', onenote_id)
         aiohttpretty.register_json_uri('GET', metadata_url, body=metadata_response)
 
         with pytest.raises(exceptions.UnexportableFileTypeError):
@@ -645,7 +646,7 @@ class TestDownload:
         revisions_url = provider._build_drive_url('items', onenote_id, 'versions')
         aiohttpretty.register_json_uri('GET', revisions_url, body=revision_response)
         metadata_response = download_fixtures['onenote_metadata']
-        metadata_url = provider._build_drive_url('items', onenote_id, **{'$expand': 'children'})
+        metadata_url = provider._build_drive_url('items', onenote_id)
         aiohttpretty.register_json_uri('GET', metadata_url, body=metadata_response)
 
         with pytest.raises(exceptions.UnexportableFileTypeError):
