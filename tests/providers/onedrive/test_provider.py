@@ -580,9 +580,10 @@ class TestDownload:
         assert response.partial
         content = await response.read()
         assert content == b'te'
+        # The ``@microsoft.graph.downloadUrl`` is pre-authenticated, so the Authorization
+        # header must be dropped to avoid a 401 from some OneDrive hosts.
         assert aiohttpretty.has_call(method='GET', uri=download_url,
                                      headers={'Range': 'bytes=0-1',
-                                              'Authorization': 'bearer wrote harry potter',
                                               'accept-encoding': ''})
 
     @pytest.mark.asyncio
@@ -603,6 +604,11 @@ class TestDownload:
         response = await provider.download(path, revision=revision_fixtures['revision_id'])
         content = await response.read()
         assert content == b'ten of them'
+        # This endpoint is a plain Graph API call (not a pre-authenticated URL), so it
+        # must be sent with the Authorization header.
+        assert aiohttpretty.has_call(method='GET', uri=download_url,
+                                     headers={'Authorization': 'bearer wrote harry potter',
+                                              'accept-encoding': ''})
 
     @pytest.mark.asyncio
     async def test_download_no_such_file(self, provider):
