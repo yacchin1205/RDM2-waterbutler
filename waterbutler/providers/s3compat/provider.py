@@ -507,7 +507,6 @@ class S3CompatProvider(provider.BaseProvider):
                     abort_url,
                     skip_auto_headers={'CONTENT-TYPE'},
                     headers=headers,
-                    params=params,
                     expects=(204,),
                     throws=exceptions.UploadError,
                 )
@@ -563,7 +562,6 @@ class S3CompatProvider(provider.BaseProvider):
             list_url,
             skip_auto_headers={'CONTENT-TYPE'},
             headers=headers,
-            params=params,
             expects=(200, 201, 404,),
             throws=exceptions.UploadError
         )
@@ -657,7 +655,6 @@ class S3CompatProvider(provider.BaseProvider):
                         resp = await self.make_request(
                             'POST',
                             url,
-                            params=del_query_params,
                             data=payload_version,
                             headers=headers,
                             expects=(200, 204,),
@@ -773,7 +770,6 @@ class S3CompatProvider(provider.BaseProvider):
             resp = await self.make_request(
                 'POST',
                 url,
-                params=del_query_params,
                 data=payload_version,
                 headers=headers,
                 expects=(200, 204,),
@@ -795,7 +791,6 @@ class S3CompatProvider(provider.BaseProvider):
             resp = await self.make_request(
                 'GET',
                 functools.partial(self.bucket.generate_url, settings.TEMP_URL_SECS, 'GET', query_parameters=query_params),
-                params=query_params,
                 expects=(200,),
                 throws=exceptions.MetadataError,
             )
@@ -838,7 +833,6 @@ class S3CompatProvider(provider.BaseProvider):
             resp = await self.make_request(
                 'GET',
                 url,
-                params=query_params,
                 expects=(200,),
                 throws=exceptions.MetadataError,
             )
