@@ -180,7 +180,7 @@ class BoxProvider(provider.BaseProvider):
 
         return base.child(name, _id=_id, folder=folder)
 
-    def can_duplicate_names(self)-> bool:
+    def can_duplicate_names(self) -> bool:
         return False
 
     def shares_storage_root(self, other: provider.BaseProvider) -> bool:

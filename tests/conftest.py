@@ -6,7 +6,15 @@ settings.config['TASKS_CONFIG'] = {
     'CELERY_RESULT_BACKEND': 'redis://'
 }
 
+import asyncio
+
 import aiohttpretty
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def set_event_loop(event_loop):
+    asyncio.set_event_loop(event_loop)
 
 
 def pytest_configure(config):

@@ -18,7 +18,7 @@ copy = sys.modules['waterbutler.tasks.copy']
 
 @pytest.fixture(autouse=True)
 def patch_backend(monkeypatch):
-    monkeypatch.setattr(copy.core.app, 'backend', None)
+    monkeypatch.setattr(type(copy.core.app), 'backend', None)
 
 
 @pytest.fixture
@@ -80,7 +80,7 @@ def test_imputes_exceptions(providers, bundles, callback):
 
     assert url == 'dest_callback'
     assert method == 'PUT'
-    assert data['errors'] == ["Exception('This is a string',)"]
+    assert data['errors'] == ["Exception('This is a string')"]
 
 def test_return_values(providers, bundles, callback, src_path, dest_path, mock_time, FAKE_TIME):
     src, dest = providers

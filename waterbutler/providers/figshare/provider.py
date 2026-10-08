@@ -148,7 +148,7 @@ class BaseFigshareProvider(provider.BaseProvider):
         if is_public:
             logger.debug('figshare provider is yet to build the public API URL correctly. '
                          'Switch back to use the private one instead')
-        segments = ('account', (*segments))
+        segments = ('account', *segments)
         return (super().build_url(*segments, **query))
 
     async def make_request(self, method, url, *args, **kwargs):

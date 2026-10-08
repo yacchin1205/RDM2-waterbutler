@@ -38,7 +38,7 @@ class CRUDHandler(core.BaseProviderHandler):
         if self.request.method in self.STREAM_METHODS:
             self.rsock, self.wsock = socket.socketpair()
 
-            self.reader, _ = await asyncio.open_unix_connection(sock=self.rsock)
+            self.reader, self.reader_writer = await asyncio.open_unix_connection(sock=self.rsock)
             _, self.writer = await asyncio.open_unix_connection(sock=self.wsock)
 
             self.stream = RequestStreamReader(self.request, self.reader)
@@ -120,6 +120,7 @@ class CRUDHandler(core.BaseProviderHandler):
         self.write(metadata.serialized())
 
         self.writer.close()
+        self.reader_writer.close()
         self.wsock.close()
 
         self._send_hook(

@@ -18,7 +18,7 @@ move = sys.modules['waterbutler.tasks.move']
 
 @pytest.fixture(autouse=True)
 def patch_backend(monkeypatch):
-    monkeypatch.setattr(move.core.app, 'backend', None)
+    monkeypatch.setattr(type(move.core.app), 'backend', None)
 
 
 @pytest.fixture
@@ -81,7 +81,7 @@ def test_imputes_exceptions(providers, bundles, callback):
     src.move.assert_called_once_with(dest, src_bundle['path'], dest_bundle['path'])
 
     assert method == 'PUT'
-    assert data['errors'] == ["Exception('This is a string',)"]
+    assert data['errors'] == ["Exception('This is a string')"]
     assert url == 'dest_callback'
 
 

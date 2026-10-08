@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 def parse_requirements(requirements):
     with open(requirements) as f:
-        return [l.strip('\n') for l in f if l.strip('\n') and not l.startswith('#')]
+        return [line.strip('\n') for line in f if line.strip('\n') and not line.startswith('#')]
 
 
 requirements = parse_requirements('requirements.txt')
@@ -30,7 +30,7 @@ setup(
         'Natural Language :: English',
         'Intended Audience :: Developers',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.11',
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: Apache Software License',
     ],

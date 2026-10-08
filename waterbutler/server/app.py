@@ -25,7 +25,7 @@ def sig_handler(sig, frame):
     io_loop = asyncio.get_event_loop()
 
     def stop_loop():
-        if len(asyncio.Task.all_tasks(io_loop)) == 0:
+        if len(asyncio.all_tasks(io_loop)) == 0:
             io_loop.stop()
         else:
             io_loop.call_later(1, stop_loop)

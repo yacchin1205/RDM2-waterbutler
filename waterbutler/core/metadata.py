@@ -89,11 +89,8 @@ class BaseMetadata(metaclass=abc.ABCMeta):
         """ Utility method for constructing the base url for actions. """
         url = furl.furl(settings.DOMAIN)
         segments = ['v1', 'resources', resource, 'providers', self.provider]
-        # If self is a folder, path ends with a slash which must be preserved. However, furl
-        # percent-encodes the trailing slash. Instead, turn folders into a list of (path_id, ''),
-        # and let furl add the slash for us.  The [1:] is because path always begins with a slash,
-        # meaning the first entry is always ''.
-        segments += self.path.split('/')[1:]
+        # Paths may already be percent-encoded; parse them before adding segments.
+        segments += furl.Path(self.path).segments
         url.path.segments.extend(segments)
 
         return url.url

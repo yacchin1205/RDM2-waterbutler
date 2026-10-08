@@ -2,6 +2,7 @@ import pytest
 
 import json
 import asyncio
+from unittest.mock import AsyncMock
 
 from tornado import testing
 from tornado import httpclient
@@ -196,7 +197,13 @@ class TestCrudHandler(utils.HandlerTestCase):
     def test_upload(self):
         data = b'stone cold crazy'
         expected = utils.MockFileMetadata()
-        self.mock_provider.upload = utils.MockCoroutine(return_value=(expected, True))
+        uploaded = []
+
+        async def upload(stream, **kwargs):
+            uploaded.append(await stream.read())
+            return expected, True
+
+        self.mock_provider.upload = AsyncMock(side_effect=upload)
 
         resp = yield self.http_client.fetch(
             self.get_url('/file?provider=queenhub&path=/roger.png'),
@@ -208,8 +215,7 @@ class TestCrudHandler(utils.HandlerTestCase):
         assert len(calls) == 1
         args, kwargs = calls[0]
         assert isinstance(args[0], streams.RequestStreamReader)
-        streamed = yield args[0].read()
-        assert streamed == data
+        assert uploaded == [data]
         assert kwargs['action'] == 'upload'
         assert str(kwargs['path']) == '/roger.png'
         assert expected.serialized() == json.loads(resp.body.decode())
