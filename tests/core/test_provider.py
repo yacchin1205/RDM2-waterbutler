@@ -1,5 +1,8 @@
 import pytest
 
+from aiohttp import web
+from aiohttp.test_utils import TestServer
+
 from tests import utils
 from unittest import mock
 from waterbutler.core import metadata
@@ -16,6 +19,27 @@ def provider2():
 
 
 class TestBaseProvider:
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('params, expected_query', [
+        ({'prefix': 'folder/', 'versions': ''},
+         'Signature=a%2Bb&prefix=folder/&versions=&prefix=folder/&versions='),
+        (None, 'Signature=a%2Bb&prefix=folder%2F&versions'),
+    ])
+    async def test_make_request_signed_query(self, provider1, params, expected_query):
+        async def echo_url(request):
+            return web.Response(text=request.raw_path)
+
+        app = web.Application()
+        app.router.add_get('/', echo_url)
+        async with TestServer(app) as server:
+            url = str(server.make_url('/')) + '?Signature=a%2Bb&prefix=folder%2F&versions'
+            try:
+                response = await provider1.make_request('GET', url, params=params)
+                assert await response.text() == '/?' + expected_query
+            finally:
+                for session in provider1.session_list:
+                    await session.close()
 
     def test_eq(self, provider1, provider2):
         assert provider1 == provider1

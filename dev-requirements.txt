@@ -1,6 +1,6 @@
 -r requirements.txt
 
-git+https://github.com/CenterForOpenScience/aiohttpretty.git@release/ahp-25.0.0
+git+https://github.com/yacchin1205/aiohttpretty.git@1f773d2451f891a553a268bdac2e2659a93f4c96
 colorlog==6.9.0
 flake8==7.1.2
 ipdb==0.13.13

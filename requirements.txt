@@ -1,5 +1,5 @@
 aiocontextvars==0.2.2  # recommended for sentry-sdk
-aiohttp==3.10.5
+aiohttp==3.14.4
 git+https://github.com/felliott/boto.git@feature/gen-url-query-params-6#egg=boto
 boto3==1.37.0
 celery==5.5.0
@@ -17,7 +17,7 @@ pyjwt==2.15.1
 python-dateutil==2.9.0
 pytz==2025.1
 sentry-sdk==2.22.0
-setuptools==80.1.0
+setuptools==80.10.2
 stevedore==5.9.1
 tornado==6.5.10
 xmltodict==0.14.2
