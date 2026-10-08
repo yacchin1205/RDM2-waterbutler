@@ -291,6 +291,9 @@ class BaseProvider(metaclass=abc.ABCMeta):
             if self.NAME not in NO_URL_ENCODED_PROVIDERS:
                 # Fix storage 'nextcloud', 'owncloud', 'nextcloudinstitutions' return HTTP 400 bad request
                 non_callable_url = URL(non_callable_url, encoded=True)
+                if kwargs.get('params'):
+                    # Preserve aiohttp < 3.10.6 query encoding for signed URLs.
+                    non_callable_url = non_callable_url.with_query(non_callable_url.query)
             try:
                 self.provider_metrics.incr('requests.count')
                 # TODO: use a `dict` to select methods with either `lambda` or `functools.partial`
