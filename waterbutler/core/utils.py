@@ -49,9 +49,6 @@ def make_provider(name: str, auth: dict, credentials: dict, settings: dict, **kw
 
 
 def as_task(func):
-    if not asyncio.iscoroutinefunction(func):
-        func = asyncio.coroutine(func)
-
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         return asyncio.ensure_future(func(*args, **kwargs))
@@ -67,7 +64,7 @@ def async_retry(retries=5, backoff=1, exceptions=(Exception, )):
         @functools.wraps(func)
         async def wrapped(*args, __retries=0, **kwargs):
             try:
-                return await asyncio.coroutine(func)(*args, **kwargs)
+                return await func(*args, **kwargs)
             except exceptions as e:
                 if __retries < retries:
                     wait_time = backoff * __retries

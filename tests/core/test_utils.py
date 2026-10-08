@@ -12,7 +12,7 @@ class TestAsyncRetry:
     async def test_returns_success(self):
         """Test the scenario where a function succeeds on first attempt.
         """
-        mock_func = mock.Mock(return_value='Foo')
+        mock_func = mock.AsyncMock(return_value='Foo')
         retryable = utils.async_retry(5, 0)(mock_func)
 
         x = await retryable()
@@ -25,7 +25,7 @@ class TestAsyncRetry:
     async def test_retries_success(self):
         """Test a scenario where a function fails first but succeeds after retrying.
         """
-        mock_func = mock.Mock(side_effect=[Exception(), Exception(), 'Foo'])
+        mock_func = mock.AsyncMock(side_effect=[Exception(), Exception(), 'Foo'])
         retryable = utils.async_retry(5, 0)(mock_func)
 
         x = await retryable()
@@ -39,7 +39,7 @@ class TestAsyncRetry:
     async def test_retries_failed(self):
         """Test a scenario where a function keeps failing / retrying until it reaches retry limit.
         """
-        mock_func = mock.Mock(side_effect=Exception('Foo'))
+        mock_func = mock.AsyncMock(side_effect=Exception('Foo'))
         retryable = utils.async_retry(8, 0)(mock_func)
 
         with pytest.raises(Exception) as e:
@@ -62,7 +62,7 @@ class TestAsyncRetry:
         However, if you remove the sleep or bump the number of retries up to a ludicrously high
         number, the test fails b/c it starts asserting before all the retries have been exhausted.
         """
-        mock_func = mock.Mock(side_effect=Exception())
+        mock_func = mock.AsyncMock(side_effect=Exception())
         retryable = utils.async_retry(8, 0)(mock_func)
 
         retryable()
@@ -82,8 +82,8 @@ class TestAsyncRetry:
         better mimic the scenario in ``waterbutler.core.remote_logging.log_file_action()``.
         """
 
-        mock_func_a = mock.Mock(side_effect=Exception())
-        mock_func_b = mock.Mock(side_effect=Exception())
+        mock_func_a = mock.AsyncMock(side_effect=Exception())
+        mock_func_b = mock.AsyncMock(side_effect=Exception())
         retryable_a = utils.async_retry(4, 0)(mock_func_a)
         retryable_b = utils.async_retry(4, 0)(mock_func_b)
 

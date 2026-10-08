@@ -1,12 +1,9 @@
-FROM python:3.6-slim-buster
+FROM python:3.11-slim-trixie
 
 RUN usermod -d /home www-data && chown www-data:www-data /home
 
 # Install dependancies
-# Update sources for Debian Buster (EOL) to use archive
-RUN echo "deb https://archive.debian.org/debian buster main" > /etc/apt/sources.list \
-    && echo "deb https://archive.debian.org/debian-security buster/updates main" >> /etc/apt/sources.list \
-    && apt-get update \
+RUN apt-get update \
     && apt-get install -y \
         git \
         libevent-dev \
@@ -17,7 +14,6 @@ RUN echo "deb https://archive.debian.org/debian buster main" > /etc/apt/sources.
         build-essential \
         libssl-dev \
         libffi-dev \
-        python-dev \
         gnupg2 \
         # grab gosu for easy step-down from root
         gosu \
@@ -28,8 +24,7 @@ RUN echo "deb https://archive.debian.org/debian buster main" > /etc/apt/sources.
 RUN mkdir -p /code
 WORKDIR /code
 
-RUN pip install -U pip==20.2
-RUN pip install setuptools==37.0.0
+RUN pip install --upgrade pip setuptools==80.1.0
 
 COPY ./requirements.txt /code/
 

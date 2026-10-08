@@ -14,6 +14,7 @@ from waterbutler.tasks import settings as tasks_settings
 logger = logging.getLogger(__name__)
 
 app = Celery()
+app.loader.override_backends['amqp'] = 'celery_amqp_backend.AMQPBackend'
 app.config_from_object(tasks_settings)
 
 

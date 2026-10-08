@@ -61,4 +61,5 @@ def mock_handler(http_request):
     handler.uploader = asyncio.Future()
     handler.wsock = Mock()
     handler.writer = Mock()
+    handler.reader_writer = Mock()
     return handler

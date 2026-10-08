@@ -42,7 +42,7 @@ class OsfAuthHandler(BaseAuthHandler):
         raw_payload = jwe.encrypt(jwt.encode({
             'data': bundle,
             'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=settings.JWT_EXPIRATION)
-        }, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM), JWE_KEY)
+        }, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM).encode('utf-8'), JWE_KEY)
 
         # Note: `aiohttp3` uses `yarl` which only supports string parameters
         query_params['payload'] = raw_payload.decode("utf-8")
@@ -71,8 +71,8 @@ class OsfAuthHandler(BaseAuthHandler):
                     raw = await response.json()
                     signed_jwt = jwe.decrypt(raw['payload'].encode(), JWE_KEY)
                     data = jwt.decode(signed_jwt, settings.JWT_SECRET,
-                                      algorithm=settings.JWT_ALGORITHM,
-                                      options={'require_exp': True})
+                                      algorithms=[settings.JWT_ALGORITHM],
+                                      options={'require': ['exp']})
                     return data['data']
                 except (jwt.InvalidTokenError, KeyError):
                     raise exceptions.AuthError(data, code=response.status)
